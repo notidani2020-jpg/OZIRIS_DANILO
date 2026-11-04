@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { PrismaModule } from '../prisma/prisma.module';
 import { MailModule } from '../mail/mail.module';
+import { getJwtSecret } from '../common/env';
 import { UsersModule } from '../users/users.module';
 
 @Module({
@@ -14,9 +15,11 @@ import { UsersModule } from '../users/users.module';
     MailModule,
     UsersModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'oziris_super_secret_jwt_key_2026',
-      signOptions: { expiresIn: '7d' },
+    JwtModule.registerAsync({
+      useFactory: () => ({
+        secret: getJwtSecret(),
+        signOptions: { expiresIn: '7d' },
+      }),
     }),
   ],
   controllers: [AuthController],

@@ -4,16 +4,39 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ValidationPipe } from '@nestjs/common';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { getAllowedOrigins, getJwtSecret } from './common/env';
 
 async function bootstrap() {
+  getJwtSecret(); // falla al arrancar si JWT_SECRET no está configurado
   const uploadsDir = join(process.cwd(), 'uploads');
   if (!existsSync(uploadsDir)) {
     mkdirSync(uploadsDir, { recursive: true });
   }
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.enableCors();
+  app.use(
+    helmet({
+      // /uploads se consume desde el frontend (otro origen)
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      // Swagger usa scripts/estilos en línea
+      contentSecurityPolicy: false,
+    }),
+  );
+  app.enableCors({
+    origin: getAllowedOrigins(),
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
+    credentials: true,
+  });
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  );
   app.useStaticAssets(uploadsDir, {
     prefix: '/uploads/',
   });

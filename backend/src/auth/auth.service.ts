@@ -363,4 +363,36 @@ export class AuthService {
         'Contraseña restablecida con éxito. Ya puedes iniciar sesión con tu nueva contraseña.',
     };
   }
+
+  async changePassword(
+    userId: string,
+    email: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    const user = await this.usersService.findByEmailWithPassword(email);
+    if (!user || user.id !== userId) {
+      throw new UnauthorizedException('Sesión inválida.');
+    }
+    const ok = await bcrypt.compare(currentPassword, user.password);
+    if (!ok) {
+      throw new BadRequestException('La contraseña actual es incorrecta.');
+    }
+    if (currentPassword === newPassword) {
+      throw new BadRequestException(
+        'La nueva contraseña debe ser distinta a la actual.',
+      );
+    }
+    const hashed = await bcrypt.hash(newPassword, 10);
+    try {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { password: hashed },
+      });
+    } catch (e) {
+      // Respaldo en memoria (solo si la base de datos no está disponible)
+      user.password = hashed;
+    }
+    return { message: 'Contraseña actualizada correctamente.' };
+  }
 }

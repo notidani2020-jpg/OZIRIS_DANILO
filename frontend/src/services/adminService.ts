@@ -43,6 +43,7 @@ export async function updateAdminUser(
     isActive: boolean;
     bio: string;
     avatarUrl: string;
+    verified: boolean;
   }>,
 ): Promise<User> {
   const res = await fetch(`${API_URL}/users/${id}`, {

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { Music, Play, Pause, Heart, Download, ShoppingBag } from "lucide-react";
 import { Track } from "@/services/api";
 
@@ -99,9 +100,18 @@ export default function TrackCard({
 
           <p className="text-xs text-zinc-400 truncate mt-0.5">
             Por{" "}
-            <span className="text-zinc-200 font-medium">
-              {track.producer?.name || "Productor OZIRIS"}
-            </span>
+            {track.producerId ? (
+              <Link
+                href={`/artista/${track.producerId}`}
+                className="text-zinc-200 font-medium hover:text-emerald-300 hover:underline transition"
+              >
+                {track.producer?.artistName || track.producer?.name || "Productor OZIRIS"}
+              </Link>
+            ) : (
+              <span className="text-zinc-200 font-medium">
+                {track.producer?.name || "Productor OZIRIS"}
+              </span>
+            )}
           </p>
 
           <div className="flex items-center gap-2 text-xs text-zinc-400 mt-2">

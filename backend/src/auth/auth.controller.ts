@@ -1,3 +1,4 @@
+import { Throttle } from '@nestjs/throttler';
 import {
   Controller,
   Post,
@@ -22,6 +23,7 @@ import {
   ForgotPasswordDto,
   VerifyResetCodeDto,
   ResetPasswordDto,
+  ChangePasswordDto,
 } from './dto';
 
 @ApiTags('Auth')
@@ -29,6 +31,7 @@ import {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('register')
   @ApiOperation({ summary: 'Registrar nuevo usuario', description: 'Crea una cuenta nueva y devuelve un token JWT.' })
   @ApiResponse({ status: 201, description: 'Usuario creado exitosamente — devuelve access_token.' })
@@ -37,6 +40,7 @@ export class AuthController {
     return this.authService.register(body);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Iniciar sesión', description: 'Autentica al usuario y devuelve un token JWT.' })
@@ -56,6 +60,7 @@ export class AuthController {
     return this.authService.getProfile(req.user.id);
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Solicitar código de recuperación de contraseña', description: 'Envía un código de 6 dígitos al email registrado.' })
@@ -65,6 +70,7 @@ export class AuthController {
     return this.authService.forgotPassword(body.email, ip);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('verify-reset-code')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verificar código de recuperación', description: 'Valida el código de 6 dígitos enviado al email.' })
@@ -74,6 +80,7 @@ export class AuthController {
     return this.authService.verifyResetCode(body.email, body.code);
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Restablecer contraseña', description: 'Establece una nueva contraseña usando el código verificado.' })
@@ -83,6 +90,23 @@ export class AuthController {
     return this.authService.resetPassword(
       body.email,
       body.code,
+      body.newPassword,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-Auth')
+  @ApiOperation({ summary: 'Cambiar contraseña (sesión iniciada)', description: 'Requiere la contraseña actual.' })
+  @ApiResponse({ status: 200, description: 'Contraseña actualizada.' })
+  @ApiResponse({ status: 400, description: 'Contraseña actual incorrecta o nueva inválida.' })
+  async changePassword(@Request() req: any, @Body() body: ChangePasswordDto) {
+    return this.authService.changePassword(
+      req.user.id,
+      req.user.email,
+      body.currentPassword,
       body.newPassword,
     );
   }

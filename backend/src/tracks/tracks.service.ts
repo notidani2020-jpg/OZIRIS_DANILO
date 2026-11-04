@@ -22,6 +22,7 @@ export class TracksService {
     maxPrice?: number;
     category?: string;
     sort?: string;
+    producerId?: string;
   }): Promise<Track[]> {
     const genre = params?.genre;
     const search = params?.search?.trim();
@@ -33,6 +34,10 @@ export class TracksService {
     try {
       const where: any = {};
       const andConditions: any[] = [];
+
+      if (params?.producerId) {
+        andConditions.push({ producerId: params.producerId });
+      }
 
       if (genre && genre !== 'all') {
         andConditions.push({
@@ -127,6 +132,9 @@ export class TracksService {
 
     // In-memory fallback
     let list = [...this.inMemoryTracks];
+    if (params?.producerId) {
+      list = list.filter((t) => t.producerId === params.producerId);
+    }
     if (genre && genre !== 'all') {
       list = list.filter((t) => t.genre?.toLowerCase() === genre.toLowerCase());
     }
@@ -261,6 +269,69 @@ export class TracksService {
     return newTrack;
   }
 
+  async update(
+    id: string,
+    data: {
+      title?: string;
+      description?: string;
+      price?: number;
+      genre?: string;
+      bpm?: number;
+      key?: string;
+      tags?: string[];
+    },
+  ): Promise<Track> {
+    const patch = {
+      title: data.title?.trim() || undefined,
+      description: data.description,
+      price: data.price,
+      genre: data.genre,
+      bpm: data.bpm,
+      key: data.key,
+      tags: data.tags,
+    };
+    try {
+      const updated = await this.prisma.track.update({
+        where: { id },
+        data: patch,
+        include: { producer: true },
+      });
+      if (updated) return this.formatTrack(updated);
+    } catch (e) {
+      // Fallback
+    }
+    const idx = this.inMemoryTracks.findIndex((t) => t.id === id);
+    if (idx === -1) {
+      throw new NotFoundException(`Beat con ID ${id} no encontrado.`);
+    }
+    const clean = Object.fromEntries(
+      Object.entries(patch).filter(([, v]) => v !== undefined),
+    );
+    this.inMemoryTracks[idx] = {
+      ...this.inMemoryTracks[idx],
+      ...clean,
+      updatedAt: new Date().toISOString(),
+    };
+    return this.inMemoryTracks[idx];
+  }
+
+  async registerPlay(id: string): Promise<{ playsCount: number }> {
+    try {
+      const t = await this.prisma.track.update({
+        where: { id },
+        data: { playsCount: { increment: 1 } },
+        select: { playsCount: true },
+      });
+      return { playsCount: t.playsCount };
+    } catch (e) {
+      // Fallback
+    }
+    const mem = this.inMemoryTracks.find((t) => t.id === id);
+    if (!mem) throw new NotFoundException(`Beat con ID ${id} no encontrado.`);
+    mem.playsCount = (mem.playsCount ?? 0) + 1;
+    return { playsCount: mem.playsCount };
+  }
+
   async remove(id: string): Promise<{ success: boolean }> {
     try {
       await this.prisma.track.delete({ where: { id } });
@@ -284,6 +355,8 @@ export class TracksService {
       audioUrl: t.audioUrl,
       fullAudioUrl: t.fullAudioUrl || t.audioUrl,
       coverUrl: t.coverUrl || t.producer?.avatarUrl || null,
+      playsCount: t.playsCount ?? 0,
+      downloadsCount: t.downloadsCount ?? 0,
       producerId: t.producerId,
       producer: t.producer
         ? {

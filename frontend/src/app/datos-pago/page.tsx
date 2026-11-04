@@ -21,12 +21,14 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 import { simulatePaymentApi, downloadBeatFile, fetchTrackById, Track } from "@/services/api";
 
 function DatosPagoContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, token, isAuthenticated, isAdmin } = useAuth();
+  const { showToast } = useToast();
 
   const metodo = searchParams.get("metodo") || "PSE";
   const beatId = searchParams.get("beat") || "";
@@ -130,7 +132,7 @@ function DatosPagoContent() {
       setIsDownloading(true);
       await downloadBeatFile(token, beatId, track?.title || "Beat_Oziris");
     } catch (err: any) {
-      alert(err.message || "Error al descargar el archivo de audio.");
+      showToast("error", err.message || "Error al descargar el archivo de audio.");
     } finally {
       setIsDownloading(false);
     }

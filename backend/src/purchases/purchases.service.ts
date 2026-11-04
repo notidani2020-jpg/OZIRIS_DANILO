@@ -62,7 +62,8 @@ export class PurchasesService {
         );
       }
 
-      const amount = dto.amount || track.price || 29.99;
+      // El monto SIEMPRE sale del precio del beat en base de datos (nunca del cliente).
+      const amount = track.price ?? 29.99;
 
       try {
         // Verificar si ya existe compra previa del mismo track por este usuario

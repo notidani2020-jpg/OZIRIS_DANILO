@@ -106,3 +106,25 @@ export async function resetPasswordApi(
   return data;
 }
 
+
+export async function changePasswordApi(
+  token: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/auth/change-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    const msg = Array.isArray(data.message) ? data.message.join(' ') : data.message;
+    throw new Error(msg || 'Error al cambiar la contraseña.');
+  }
+  return data;
+}

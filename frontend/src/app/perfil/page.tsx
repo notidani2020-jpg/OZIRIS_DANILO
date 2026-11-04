@@ -19,6 +19,7 @@ import {
   Music2,
   ImageIcon,
   Link2,
+  Lock,
   AtSign,
   PlayCircle,
 } from "lucide-react";
@@ -29,6 +30,7 @@ import {
   updateProfileApi,
   uploadAvatarApi,
   uploadBannerApi,
+  changePasswordApi,
 } from "@/services/api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
@@ -139,6 +141,11 @@ function ProfileForm({ user }: { user: User }) {
     user.artist?.bannerUrl || null,
   );
 
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
@@ -184,6 +191,38 @@ function ProfileForm({ user }: { user: User }) {
     } finally {
       setIsUploadingBanner(false);
       e.target.value = "";
+    }
+  };
+
+  const passwordError =
+    newPassword && newPassword.length < 6
+      ? "La nueva contraseña debe tener al menos 6 caracteres."
+      : confirmPassword && newPassword !== confirmPassword
+        ? "Las contraseñas no coinciden."
+        : "";
+  const canChangePassword =
+    !!currentPassword && newPassword.length >= 6 && newPassword === confirmPassword;
+
+  const handleChangePassword = async () => {
+    if (!token || !canChangePassword || isChangingPassword) return;
+    try {
+      setIsChangingPassword(true);
+      const res = await changePasswordApi(token, currentPassword, newPassword);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      showNotification("success", res.message);
+    } catch (err) {
+      showNotification("error", errMsg(err, "Error al cambiar la contraseña."));
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const onPasswordKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleChangePassword();
     }
   };
 
@@ -252,9 +291,19 @@ function ProfileForm({ user }: { user: User }) {
             <ArrowLeft className="w-4 h-4" />
             Volver al inicio
           </Link>
-          <span className="text-sm font-bold tracking-tight">
-            {isArtist ? "Mi Perfil de Artista" : "Mi Perfil de Usuario"}
-          </span>
+          <div className="flex items-center gap-4">
+            {isArtist && (
+              <Link
+                href={`/artista/${user.id}`}
+                className="text-xs font-semibold text-emerald-300 hover:text-emerald-200 bg-emerald-500/10 border border-emerald-500/25 px-3 py-1.5 rounded-full transition"
+              >
+                Ver mi perfil público
+              </Link>
+            )}
+            <span className="hidden sm:inline text-sm font-bold tracking-tight">
+              {isArtist ? "Mi Perfil de Artista" : "Mi Perfil de Usuario"}
+            </span>
+          </div>
         </div>
       </header>
 
@@ -564,6 +613,66 @@ function ProfileForm({ user }: { user: User }) {
               habilitada exclusivamente para perfiles de Artista.
             </div>
           )}
+
+          {/* SEGURIDAD */}
+          <Section
+            title="Seguridad"
+            description="Cambia tu contraseña de acceso."
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Field
+                label="Contraseña actual"
+                icon={<Lock className="h-4 w-4 text-zinc-500" />}
+              >
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  onKeyDown={onPasswordKeyDown}
+                  className={`${inputBase} pl-10 pr-3`}
+                />
+              </Field>
+              <Field
+                label="Nueva contraseña"
+                icon={<Lock className="h-4 w-4 text-zinc-500" />}
+              >
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  onKeyDown={onPasswordKeyDown}
+                  className={`${inputBase} pl-10 pr-3`}
+                />
+              </Field>
+              <Field
+                label="Confirmar nueva contraseña"
+                icon={<Lock className="h-4 w-4 text-zinc-500" />}
+                error={passwordError}
+              >
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onKeyDown={onPasswordKeyDown}
+                  className={`${inputBase} pl-10 pr-3`}
+                />
+              </Field>
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleChangePassword}
+                disabled={!canChangePassword || isChangingPassword}
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-semibold px-5 py-2 rounded-xl text-sm transition disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+              >
+                {isChangingPassword && <Loader2 className="w-4 h-4 animate-spin" />}
+                Cambiar contraseña
+              </button>
+            </div>
+          </Section>
 
           {/* ACCIONES */}
           <div className="flex items-center justify-end gap-3 pt-2">

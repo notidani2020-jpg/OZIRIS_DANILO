@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Delete,
+  Patch,
   Param,
   Query,
   Body,
@@ -10,6 +11,8 @@ import {
   UseInterceptors,
   UploadedFiles,
   Request,
+  BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -22,11 +25,14 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { diskStorageWithPrefix, trackFileFilter, MB } from '../common/upload.utils';
+import { unlink } from 'fs';
 import { TracksService } from './tracks.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Track } from './dto';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Track, UpdateTrackDto } from './dto';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Tracks')
 @Controller('tracks')
@@ -40,6 +46,7 @@ export class TracksController {
   @ApiQuery({ name: 'tag', required: false, example: 'melodic', description: 'Filtrar por tag' })
   @ApiQuery({ name: 'maxPrice', required: false, example: 50, description: 'Precio máximo en USD' })
   @ApiQuery({ name: 'category', required: false, example: 'beats', description: 'Filtrar por categoría' })
+  @ApiQuery({ name: 'producerId', required: false, description: 'Filtrar por ID del productor' })
   @ApiQuery({ name: 'sort', required: false, enum: ['price_asc', 'price_desc', 'newest', 'popular'], description: 'Criterio de ordenamiento' })
   @ApiResponse({ status: 200, description: 'Lista de tracks.' })
   async findAll(
@@ -49,6 +56,7 @@ export class TracksController {
     @Query('maxPrice') maxPrice?: string,
     @Query('category') category?: string,
     @Query('sort') sort?: string,
+    @Query('producerId') producerId?: string,
   ): Promise<Track[]> {
     return this.tracksService.findAll({
       genre,
@@ -57,6 +65,7 @@ export class TracksController {
       maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
       category,
       sort,
+      producerId,
     });
   }
 
@@ -70,7 +79,8 @@ export class TracksController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('PRODUCER', 'ADMIN')
   @ApiBearerAuth('JWT-Auth')
   @ApiOperation({
     summary: 'Subir un nuevo beat',
@@ -105,20 +115,9 @@ export class TracksController {
         { name: 'coverImage', maxCount: 1 },
       ],
       {
-        storage: diskStorage({
-          destination: './uploads',
-          filename: (
-            req: any,
-            file: any,
-            cb: (error: Error | null, filename: string) => void,
-          ) => {
-            const randomName = Array(16)
-              .fill(null)
-              .map(() => Math.round(Math.random() * 16).toString(16))
-              .join('');
-            cb(null, `${randomName}${extname(file.originalname)}`);
-          },
-        }),
+        storage: diskStorageWithPrefix(),
+        fileFilter: trackFileFilter,
+        limits: { fileSize: 100 * MB, files: 4 },
       },
     ),
   )
@@ -135,6 +134,26 @@ export class TracksController {
   ): Promise<Track> {
     const uploadedAudio = files?.audioFile?.[0] || files?.audio?.[0];
     const uploadedCover = files?.coverImage?.[0] || files?.cover?.[0];
+
+    const allFiles = [
+      ...(files?.audio ?? []),
+      ...(files?.audioFile ?? []),
+      ...(files?.cover ?? []),
+      ...(files?.coverImage ?? []),
+    ];
+    const discardUploads = () =>
+      allFiles.forEach((f) => unlink(f.path, () => undefined));
+
+    const title = typeof body?.title === 'string' ? body.title.trim() : '';
+    if (!title || title.length > 150) {
+      discardUploads();
+      throw new BadRequestException('El título es obligatorio (máx. 150 caracteres).');
+    }
+    const parsedPrice = body?.price !== undefined && body?.price !== '' ? Number(body.price) : 29.99;
+    if (!Number.isFinite(parsedPrice) || parsedPrice < 0 || parsedPrice > 100000) {
+      discardUploads();
+      throw new BadRequestException('El precio no es válido.');
+    }
 
     const audioUrl = uploadedAudio
       ? `/uploads/${uploadedAudio.filename}`
@@ -155,9 +174,9 @@ export class TracksController {
     const producerId = req.user.id;
 
     return this.tracksService.create({
-      title: body?.title,
+      title,
       description: body?.description,
-      price: body?.price ? parseFloat(body.price) : 29.99,
+      price: parsedPrice,
       genre: body?.genre,
       bpm: body?.bpm ? parseInt(body.bpm) : 120,
       key: body?.key,
@@ -169,12 +188,49 @@ export class TracksController {
     });
   }
 
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-Auth')
+  @ApiOperation({ summary: 'Editar un beat (dueño o ADMIN)' })
+  @ApiParam({ name: 'id', description: 'ID del track a editar' })
+  @ApiResponse({ status: 200, description: 'Beat actualizado.' })
+  @ApiResponse({ status: 403, description: 'Solo el dueño del beat o un ADMIN pueden editarlo.' })
+  async update(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: UpdateTrackDto,
+  ): Promise<Track> {
+    const track = await this.tracksService.findOne(id);
+    if (req.user.role !== 'ADMIN' && track.producerId !== req.user.id) {
+      throw new ForbiddenException('No puedes editar un beat que no es tuyo.');
+    }
+    return this.tracksService.update(id, body);
+  }
+
+  @Post(':id/play')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @ApiOperation({ summary: 'Registrar una reproducción del beat' })
+  @ApiParam({ name: 'id', description: 'ID del track reproducido' })
+  async registerPlay(@Param('id') id: string): Promise<{ playsCount: number }> {
+    return this.tracksService.registerPlay(id);
+  }
+
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-Auth')
   @ApiOperation({ summary: 'Eliminar un beat por ID' })
   @ApiParam({ name: 'id', description: 'ID del track a eliminar' })
   @ApiResponse({ status: 200, description: 'Beat eliminado.' })
   @ApiResponse({ status: 404, description: 'Beat no encontrado.' })
-  async remove(@Param('id') id: string): Promise<{ success: boolean }> {
+  @ApiResponse({ status: 403, description: 'Solo el dueño del beat o un ADMIN pueden eliminarlo.' })
+  async remove(
+    @Request() req: any,
+    @Param('id') id: string,
+  ): Promise<{ success: boolean }> {
+    const track = await this.tracksService.findOne(id);
+    if (req.user.role !== 'ADMIN' && track.producerId !== req.user.id) {
+      throw new ForbiddenException('No puedes eliminar un beat que no es tuyo.');
+    }
     return this.tracksService.remove(id);
   }
 }

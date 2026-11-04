@@ -39,14 +39,36 @@ export interface Track {
   audioUrl: string;
   fullAudioUrl?: string;
   coverUrl?: string;
+  playsCount?: number;
+  downloadsCount?: number;
   producerId: string;
   producer?: {
     id: string;
     name: string;
     email: string;
+    avatarUrl?: string | null;
+    artistName?: string | null;
   };
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface PublicArtist {
+  id: string;
+  name: string;
+  artistName: string;
+  avatarUrl: string | null;
+  location: string | null;
+  bio: string | null;
+  genre: string | null;
+  bannerUrl: string | null;
+  spotifyUrl: string | null;
+  instagramUrl: string | null;
+  youtubeUrl: string | null;
+  verified: boolean;
+  tracksCount: number;
+  totalPlays: number;
+  memberSince: string | null;
 }
 
 export interface AdminStats {

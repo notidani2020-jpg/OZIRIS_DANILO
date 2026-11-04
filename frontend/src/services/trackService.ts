@@ -8,6 +8,7 @@ export interface FetchTracksParams {
   maxPrice?: number;
   category?: string;
   sort?: string;
+  producerId?: string;
 }
 
 export async function fetchTracks(
@@ -24,6 +25,7 @@ export async function fetchTracks(
     if (params.maxPrice !== undefined) queryParams.set('maxPrice', params.maxPrice.toString());
     if (params.category) queryParams.set('category', params.category);
     if (params.sort) queryParams.set('sort', params.sort);
+    if (params.producerId) queryParams.set('producerId', params.producerId);
   }
 
   const queryString = queryParams.toString();
@@ -46,11 +48,13 @@ export async function fetchTrackById(id: string): Promise<Track> {
 
 export function uploadBeat(
   formData: FormData,
+  token: string,
   onProgress?: (percent: number) => void,
 ): Promise<Track> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${API_URL}/tracks`);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
     if (xhr.upload && onProgress) {
       xhr.upload.onprogress = (event) => {
@@ -85,4 +89,38 @@ export function uploadBeat(
 
     xhr.send(formData);
   });
+}
+
+export async function updateTrackApi(
+  token: string,
+  id: string,
+  payload: Partial<{
+    title: string;
+    description: string;
+    price: number;
+    genre: string;
+    bpm: number;
+    key: string;
+    tags: string[];
+  }>,
+): Promise<Track> {
+  const res = await fetch(`${API_URL}/tracks/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    const msg = Array.isArray(data.message) ? data.message.join(' ') : data.message;
+    throw new Error(msg || 'Error al actualizar el Beat.');
+  }
+  return data;
+}
+
+/** Registra una reproducción (no bloquea la UI si falla). */
+export function registerPlayApi(id: string): void {
+  fetch(`${API_URL}/tracks/${id}/play`, { method: 'POST' }).catch(() => {});
 }

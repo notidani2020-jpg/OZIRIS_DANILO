@@ -1,5 +1,5 @@
 import { API_URL } from './config';
-import { User, Track } from '@/types';
+import { User, Track, PublicArtist } from '@/types';
 
 export async function updateProfileApi(
   token: string,
@@ -92,6 +92,17 @@ export async function toggleFavoriteApi(
   const data = await res.json();
   if (!res.ok) {
     throw new Error(data.message || 'Error al cambiar estado de favorito.');
+  }
+  return data;
+}
+
+export async function fetchPublicArtistApi(id: string): Promise<PublicArtist> {
+  const res = await fetch(`${API_URL}/artists/${encodeURIComponent(id)}`, {
+    cache: 'no-store',
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'No se pudo cargar el perfil del artista.');
   }
   return data;
 }

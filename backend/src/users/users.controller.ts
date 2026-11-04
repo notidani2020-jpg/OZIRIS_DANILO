@@ -11,6 +11,8 @@ import {
   Request,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -23,8 +25,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { diskStorageWithPrefix, imageFileFilter, MB } from '../common/upload.utils';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -61,24 +62,14 @@ export class UsersController {
   @ApiResponse({ status: 201, description: 'Avatar subido y perfil actualizado.' })
   @UseInterceptors(
     FileInterceptor('avatar', {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (
-          req: any,
-          file: any,
-          cb: (error: Error | null, filename: string) => void,
-        ) => {
-          const randomName = Array(16)
-            .fill(null)
-            .map(() => Math.round(Math.random() * 16).toString(16))
-            .join('');
-          cb(null, `avatar-${randomName}${extname(file.originalname)}`);
-        },
-      }),
+      storage: diskStorageWithPrefix('avatar-'),
+      fileFilter: imageFileFilter,
+      limits: { fileSize: 5 * MB, files: 1 },
     }),
   )
   async uploadAvatar(@Request() req: any, @UploadedFile() file: any) {
-    const avatarUrl = file ? `/uploads/${file.filename}` : '';
+    if (!file) throw new BadRequestException('Debes adjuntar una imagen.');
+    const avatarUrl = `/uploads/${file.filename}`;
     return this.usersService.updateProfile(req.user.id, { avatarUrl });
   }
 
@@ -96,24 +87,14 @@ export class UsersController {
   @ApiResponse({ status: 201, description: 'Banner subido y perfil actualizado.' })
   @UseInterceptors(
     FileInterceptor('banner', {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (
-          req: any,
-          file: any,
-          cb: (error: Error | null, filename: string) => void,
-        ) => {
-          const randomName = Array(16)
-            .fill(null)
-            .map(() => Math.round(Math.random() * 16).toString(16))
-            .join('');
-          cb(null, `banner-${randomName}${extname(file.originalname)}`);
-        },
-      }),
+      storage: diskStorageWithPrefix('banner-'),
+      fileFilter: imageFileFilter,
+      limits: { fileSize: 5 * MB, files: 1 },
     }),
   )
   async uploadBanner(@Request() req: any, @UploadedFile() file: any) {
-    const bannerUrl = file ? `/uploads/${file.filename}` : '';
+    if (!file) throw new BadRequestException('Debes adjuntar una imagen.');
+    const bannerUrl = `/uploads/${file.filename}`;
     return this.usersService.updateProfile(req.user.id, { bannerUrl });
   }
 
@@ -160,7 +141,10 @@ export class UsersController {
   @ApiParam({ name: 'id', description: 'ID del usuario' })
   @ApiResponse({ status: 200, description: 'Datos del usuario.' })
   @ApiResponse({ status: 404, description: 'Usuario no encontrado.' })
-  async findOne(@Param('id') id: string) {
+  async findOne(@Request() req: any, @Param('id') id: string) {
+    if (req.user.role !== 'ADMIN' && req.user.id !== id) {
+      throw new ForbiddenException('No tienes permiso para ver este usuario.');
+    }
     return this.usersService.findById(id);
   }
 
@@ -181,7 +165,20 @@ export class UsersController {
   @ApiParam({ name: 'id', description: 'ID del usuario a actualizar' })
   @ApiResponse({ status: 200, description: 'Usuario actualizado.' })
   @ApiResponse({ status: 403, description: 'Solo accesible por ADMIN.' })
-  async update(@Param('id') id: string, @Body() body: UpdateUserDto) {
+  async update(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: UpdateUserDto,
+  ) {
+    if (
+      req.user.id === id &&
+      ((body.role !== undefined && body.role !== 'ADMIN') ||
+        body.isActive === false)
+    ) {
+      throw new ForbiddenException(
+        'No puedes quitarte el rol de administrador ni desactivar tu propia cuenta.',
+      );
+    }
     return this.usersService.updateUser(id, body);
   }
 
@@ -192,7 +189,10 @@ export class UsersController {
   @ApiParam({ name: 'id', description: 'ID del usuario a eliminar' })
   @ApiResponse({ status: 200, description: 'Usuario eliminado.' })
   @ApiResponse({ status: 403, description: 'Solo accesible por ADMIN.' })
-  async remove(@Param('id') id: string) {
+  async remove(@Request() req: any, @Param('id') id: string) {
+    if (req.user.id === id) {
+      throw new ForbiddenException('No puedes eliminar tu propia cuenta.');
+    }
     return this.usersService.deleteUser(id);
   }
 }

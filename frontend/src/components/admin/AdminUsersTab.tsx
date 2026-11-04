@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Shield, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { Search, Shield, CheckCircle, XCircle, Trash2, BadgeCheck } from 'lucide-react';
 import { User } from '@/types';
 
 interface AdminUsersTabProps {
@@ -8,7 +8,9 @@ interface AdminUsersTabProps {
   setUserSearch: (val: string) => void;
   isLoadingUsers: boolean;
   onToggleStatus: (user: User) => void;
-  onToggleRole: (user: User) => void;
+  onChangeRole: (user: User, role: string) => void;
+  onToggleVerified: (user: User) => void;
+  currentUserId?: string;
   onSelectUserToDelete: (user: User) => void;
 }
 
@@ -18,7 +20,9 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
   setUserSearch,
   isLoadingUsers,
   onToggleStatus,
-  onToggleRole,
+  onChangeRole,
+  onToggleVerified,
+  currentUserId,
   onSelectUserToDelete,
 }) => {
   return (
@@ -84,24 +88,27 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                     </td>
                     <td className="py-3.5 px-4 text-zinc-400 font-mono text-xs">{u.email}</td>
                     <td className="py-3.5 px-4">
-                      <button
-                        onClick={() => onToggleRole(u)}
-                        title="Hacer clic para cambiar rol"
-                        className={`px-2.5 py-1 rounded-full text-xs font-bold transition flex items-center gap-1.5 ${
-                          u.role === 'ADMIN'
-                            ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/25'
-                            : 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700'
-                        }`}
-                      >
-                        <Shield className="w-3 h-3" />
-                        <span>{u.role}</span>
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <Shield className="w-3 h-3 text-zinc-500" />
+                        <select
+                          value={u.role === 'BUYER' ? 'USER' : u.role}
+                          disabled={u.id === currentUserId}
+                          onChange={(e) => onChangeRole(u, e.target.value)}
+                          title={u.id === currentUserId ? 'No puedes cambiar tu propio rol' : 'Cambiar rol'}
+                          className="bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs font-bold rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 disabled:opacity-50"
+                        >
+                          <option value="USER">USER</option>
+                          <option value="PRODUCER">PRODUCER</option>
+                          <option value="ADMIN">ADMIN</option>
+                        </select>
+                      </div>
                     </td>
                     <td className="py-3.5 px-4">
                       <button
+                        disabled={u.id === currentUserId}
                         onClick={() => onToggleStatus(u)}
                         title="Hacer clic para cambiar estado"
-                        className={`px-2.5 py-1 rounded-full text-xs font-semibold transition inline-flex items-center gap-1 ${
+                        className={`px-2.5 py-1 rounded-full text-xs font-semibold transition inline-flex items-center gap-1 disabled:opacity-50 disabled:pointer-events-none ${
                           u.isActive
                             ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
                             : 'bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20'
@@ -122,16 +129,31 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {u.role === 'PRODUCER' && (
+                          <button
+                            onClick={() => onToggleVerified(u)}
+                            className={`p-1.5 rounded-lg transition ${
+                              u.artist?.verified
+                                ? 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20'
+                                : 'text-zinc-400 hover:text-white hover:bg-white/10'
+                            }`}
+                            title={u.artist?.verified ? 'Quitar verificación' : 'Verificar artista'}
+                          >
+                            <BadgeCheck className="w-4 h-4" />
+                          </button>
+                        )}
                         <button
+                          disabled={u.id === currentUserId}
                           onClick={() => onToggleStatus(u)}
-                          className="p-1.5 hover:bg-white/10 text-zinc-400 hover:text-white rounded-lg transition"
+                          className="p-1.5 hover:bg-white/10 text-zinc-400 hover:text-white rounded-lg transition disabled:opacity-30 disabled:pointer-events-none"
                           title={u.isActive ? 'Desactivar usuario' : 'Activar usuario'}
                         >
                           {u.isActive ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
                         </button>
                         <button
+                          disabled={u.id === currentUserId}
                           onClick={() => onSelectUserToDelete(u)}
-                          className="p-1.5 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-lg transition"
+                          className="p-1.5 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-lg transition disabled:opacity-30 disabled:pointer-events-none"
                           title="Eliminar usuario"
                         >
                           <Trash2 className="w-4 h-4" />

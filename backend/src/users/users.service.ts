@@ -257,6 +257,7 @@ export class UsersService {
       isActive: boolean;
       bio: string;
       avatarUrl: string;
+      verified: boolean;
     }>,
   ): Promise<UserResponse> {
     try {
@@ -272,8 +273,24 @@ export class UsersService {
           bio: data.bio,
           avatarUrl: data.avatarUrl,
         },
+        include: { artist: true },
       });
-      if (updated) return this.sanitizeUser(updated);
+      if (updated) {
+        // Un PRODUCER siempre debe tener su ficha de artista.
+        if (updated.role === 'PRODUCER') {
+          const artist = await this.prisma.artist.upsert({
+            where: { userId: id },
+            update: data.verified !== undefined ? { verified: data.verified } : {},
+            create: {
+              artisticName: updated.artistName || updated.name,
+              verified: data.verified ?? false,
+              userId: id,
+            },
+          });
+          return this.sanitizeUser({ ...updated, artist });
+        }
+        return this.sanitizeUser(updated);
+      }
     } catch (e) {
       // Fallback
     }
@@ -375,6 +392,8 @@ export class UsersService {
     let activeUsers = 0;
     let totalProducers = 0;
     let totalTracks = 0;
+    let totalSales = 0;
+    let totalRevenue = 0;
 
     try {
       totalUsers = await this.prisma.user.count();
@@ -383,13 +402,22 @@ export class UsersService {
         where: { role: 'PRODUCER' as any },
       });
       totalTracks = await this.prisma.track.count();
+      const sales = await this.prisma.purchase.aggregate({
+        where: { status: 'COMPLETED' },
+        _count: { _all: true },
+        _sum: { amount: true },
+      });
+      totalSales = sales._count._all;
+      totalRevenue = Math.round((sales._sum.amount ?? 0) * 100) / 100;
     } catch (e) {
       totalUsers = this.inMemoryUsers.length;
       activeUsers = this.inMemoryUsers.filter((u) => u.isActive).length;
       totalProducers = this.inMemoryUsers.filter(
         (u) => u.role === 'PRODUCER' || u.role === 'ADMIN',
       ).length;
-      totalTracks = 4;
+      totalTracks = 0;
+      totalSales = 0;
+      totalRevenue = 0;
     }
 
     return {
@@ -397,8 +425,58 @@ export class UsersService {
       activeUsers,
       totalProducers,
       totalTracks,
-      totalSales: 12,
-      totalRevenue: 359.88,
+      totalSales,
+      totalRevenue,
+    };
+  }
+
+  /** Datos públicos de un artista (sin correo ni datos privados). */
+  async getPublicArtist(id: string) {
+    let user: any = null;
+    let tracksCount = 0;
+    let totalPlays = 0;
+    try {
+      user = await this.prisma.user.findUnique({
+        where: { id },
+        include: { artist: true },
+      });
+      if (user && user.role === 'PRODUCER' && user.isActive) {
+        const agg = await this.prisma.track.aggregate({
+          where: { producerId: id },
+          _count: { _all: true },
+          _sum: { playsCount: true },
+        });
+        tracksCount = agg._count._all;
+        totalPlays = agg._sum.playsCount ?? 0;
+      }
+    } catch (e) {
+      user = this.inMemoryUsers.find((u) => u.id === id) ?? null;
+    }
+
+    if (!user || user.role !== 'PRODUCER' || user.isActive === false) {
+      throw new NotFoundException('Artista no encontrado.');
+    }
+
+    const artist = user.artist;
+    return {
+      id: user.id,
+      name: user.name,
+      artistName: artist?.artisticName || user.artistName || user.name,
+      avatarUrl: user.avatarUrl || null,
+      location: user.location || null,
+      bio: artist?.bio || user.bio || null,
+      genre: artist?.genre || null,
+      bannerUrl: artist?.bannerUrl || null,
+      spotifyUrl: artist?.spotifyUrl || null,
+      instagramUrl: artist?.instagramUrl || null,
+      youtubeUrl: artist?.youtubeUrl || null,
+      verified: artist?.verified ?? false,
+      tracksCount,
+      totalPlays,
+      memberSince:
+        user.createdAt instanceof Date
+          ? user.createdAt.toISOString()
+          : user.createdAt || null,
     };
   }
 

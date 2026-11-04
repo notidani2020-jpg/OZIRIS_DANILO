@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
+import { ToastProvider } from "@/context/ToastContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { PlayerProvider } from "@/context/PlayerContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
@@ -34,6 +35,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <ToastProvider>
         <AuthProvider>
           <CartProvider>
             <FavoritesProvider>
@@ -45,6 +47,7 @@ export default function RootLayout({
             </FavoritesProvider>
           </CartProvider>
         </AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   );

@@ -16,7 +16,7 @@ interface UploadBeatModalProps {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBeatModalProps) {
-  const { user, isArtist } = useAuth();
+  const { user, token, isArtist } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [genre, setGenre] = useState('Trap');
@@ -174,7 +174,8 @@ export default function UploadBeatModal({ isOpen, onClose, onSuccess }: UploadBe
         formData.append('coverUrl', user.avatarUrl);
       }
 
-      const newTrack = await uploadBeat(formData, (progress) => {
+      if (!token) throw new Error('Tu sesión expiró. Inicia sesión de nuevo.');
+      const newTrack = await uploadBeat(formData, token, (progress) => {
         setUploadProgress(progress);
       });
 

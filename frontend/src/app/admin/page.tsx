@@ -41,7 +41,8 @@ function AdminDashboardContent() {
     setTrackToDelete,
     notification,
     handleToggleUserStatus,
-    handleToggleUserRole,
+    handleChangeUserRole,
+    handleToggleVerified,
     confirmDeleteUser,
     confirmDeleteTrack,
     refreshAll,
@@ -116,7 +117,9 @@ function AdminDashboardContent() {
             setUserSearch={setUserSearch}
             isLoadingUsers={isLoadingUsers}
             onToggleStatus={handleToggleUserStatus}
-            onToggleRole={handleToggleUserRole}
+            onChangeRole={handleChangeUserRole}
+            onToggleVerified={handleToggleVerified}
+            currentUserId={currentUser?.id}
             onSelectUserToDelete={setUserToDelete}
           />
         )}

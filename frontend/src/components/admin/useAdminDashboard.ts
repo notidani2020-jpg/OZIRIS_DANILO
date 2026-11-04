@@ -109,16 +109,27 @@ export function useAdminDashboard(token: string | null) {
     }
   };
 
-  const handleToggleUserRole = async (userToToggle: User) => {
-    if (!token) return;
+  const handleChangeUserRole = async (userToChange: User, nextRole: string) => {
+    if (!token || nextRole === userToChange.role) return;
     try {
-      const nextRole = userToToggle.role === 'ADMIN' ? 'USER' : 'ADMIN';
-      await updateAdminUser(token, userToToggle.id, { role: nextRole });
-      showNotification('success', `Rol de ${userToToggle.name} cambiado a ${nextRole}.`);
+      await updateAdminUser(token, userToChange.id, { role: nextRole });
+      showNotification('success', `Rol de ${userToChange.name} cambiado a ${nextRole}.`);
       loadUsers();
       loadStats();
     } catch (err: any) {
       showNotification('error', err.message || 'Error al cambiar rol.');
+    }
+  };
+
+  const handleToggleVerified = async (artistUser: User) => {
+    if (!token) return;
+    try {
+      const next = !artistUser.artist?.verified;
+      await updateAdminUser(token, artistUser.id, { verified: next });
+      showNotification('success', `${artistUser.artistName || artistUser.name} ${next ? 'verificado' : 'sin verificar'}.`);
+      loadUsers();
+    } catch (err: any) {
+      showNotification('error', err.message || 'Error al cambiar verificación.');
     }
   };
 
@@ -165,7 +176,8 @@ export function useAdminDashboard(token: string | null) {
     setTrackToDelete,
     notification,
     handleToggleUserStatus,
-    handleToggleUserRole,
+    handleChangeUserRole,
+    handleToggleVerified,
     confirmDeleteUser,
     confirmDeleteTrack,
     refreshAll,

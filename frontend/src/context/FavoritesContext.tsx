@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { Track } from "@/types";
 import { useAuth } from "./AuthContext";
+import { useToast } from "./ToastContext";
 import { fetchFavoritesApi, toggleFavoriteApi } from "@/services/userService";
 
 interface FavoritesContextType {
@@ -21,6 +22,7 @@ const FavoritesContext = createContext<FavoritesContextType | undefined>(undefin
 
 export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { token, isAuthenticated } = useAuth();
+  const { showToast } = useToast();
   const [favorites, setFavorites] = useState<Track[]>([]);
   const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -60,7 +62,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const toggleFavorite = async (track: Track): Promise<boolean> => {
     if (!token || !isAuthenticated) {
-      alert("Inicia sesión para guardar tus Beats en favoritos.");
+      showToast("info", "Inicia sesión para guardar tus Beats en favoritos.");
       return false;
     }
 

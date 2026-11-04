@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Track, PaymentSimulationResponse } from "@/types";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 import { simulatePaymentApi, downloadBeatFile } from "@/services/api";
 
 interface PaymentSimulationModalProps {
@@ -47,6 +48,7 @@ export default function PaymentSimulationModal({
   onSuccess,
 }: PaymentSimulationModalProps) {
   const { user, token, isAuthenticated, isAdmin } = useAuth();
+  const { showToast } = useToast();
 
   const itemsToBuy: Track[] = tracks && tracks.length > 0 ? tracks : track ? [track] : [];
   const totalAmount = itemsToBuy.reduce((acc, curr) => acc + (Number(curr.price) || 29.99), 0);
@@ -110,7 +112,7 @@ export default function PaymentSimulationModal({
       setIsDownloading((prev) => ({ ...prev, [item.id]: true }));
       await downloadBeatFile(token, item.id, item.title);
     } catch (err: any) {
-      alert(err.message || "Error al descargar el archivo de audio.");
+      showToast("error", err.message || "Error al descargar el archivo de audio.");
     } finally {
       setIsDownloading((prev) => ({ ...prev, [item.id]: false }));
     }

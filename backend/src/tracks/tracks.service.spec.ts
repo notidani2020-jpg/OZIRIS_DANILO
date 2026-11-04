@@ -14,6 +14,7 @@ describe('TracksService', () => {
         findUnique: jest.fn(),
         create: jest.fn(),
         delete: jest.fn(),
+        update: jest.fn(),
       },
     };
 
@@ -126,6 +127,47 @@ describe('TracksService', () => {
 
       const result = await service.remove('t-delete-1');
       expect(result).toEqual({ success: true });
+    });
+  });
+
+  describe('update', () => {
+    it('actualiza solo los campos enviados', async () => {
+      prismaService.track.update.mockResolvedValue({
+        id: 't-1',
+        title: 'Nuevo',
+        price: 15,
+        tags: [],
+        audioUrl: '/uploads/a.mp3',
+        producerId: 'u1',
+      });
+      const res = await service.update('t-1', { title: ' Nuevo ', price: 15 });
+      expect(prismaService.track.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 't-1' },
+          data: expect.objectContaining({ title: 'Nuevo', price: 15 }),
+        }),
+      );
+      expect(res.price).toBe(15);
+    });
+
+    it('lanza NotFound si el beat no existe', async () => {
+      prismaService.track.update.mockRejectedValue(new Error('not found'));
+      await expect(service.update('nope', { price: 1 })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('registerPlay', () => {
+    it('incrementa el contador de reproducciones', async () => {
+      prismaService.track.update.mockResolvedValue({ playsCount: 8 });
+      const res = await service.registerPlay('t-1');
+      expect(res.playsCount).toBe(8);
+      expect(prismaService.track.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { playsCount: { increment: 1 } },
+        }),
+      );
     });
   });
 });

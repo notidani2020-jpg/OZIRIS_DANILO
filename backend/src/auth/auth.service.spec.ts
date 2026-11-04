@@ -243,4 +243,43 @@ describe('AuthService', () => {
       expect(mailService.sendPasswordResetEmail).toHaveBeenCalled();
     });
   });
+
+  describe('changePassword', () => {
+    it('cambia la contraseña cuando la actual es correcta', async () => {
+      const hashed = await bcrypt.hash('Actual123!', 4);
+      usersService.findByEmailWithPassword!.mockResolvedValue({
+        id: 'u1',
+        email: 'a@b.co',
+        password: hashed,
+      });
+      const res = await authService.changePassword('u1', 'a@b.co', 'Actual123!', 'Nueva456!');
+      expect(res.message).toMatch(/actualizada/i);
+      expect(prismaService.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'u1' } }),
+      );
+    });
+
+    it('rechaza si la contraseña actual es incorrecta', async () => {
+      const hashed = await bcrypt.hash('Actual123!', 4);
+      usersService.findByEmailWithPassword!.mockResolvedValue({
+        id: 'u1',
+        email: 'a@b.co',
+        password: hashed,
+      });
+      await expect(
+        authService.changePassword('u1', 'a@b.co', 'Incorrecta', 'Nueva456!'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('rechaza si el token pertenece a otro usuario', async () => {
+      usersService.findByEmailWithPassword!.mockResolvedValue({
+        id: 'otro',
+        email: 'a@b.co',
+        password: 'x',
+      });
+      await expect(
+        authService.changePassword('u1', 'a@b.co', 'a', 'Nueva456!'),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+  });
 });

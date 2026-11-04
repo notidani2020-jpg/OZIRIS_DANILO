@@ -18,6 +18,8 @@ export interface Track {
   audioUrl: string;
   fullAudioUrl?: string;
   coverUrl?: string;
+  playsCount?: number;
+  downloadsCount?: number;
   producerId: string;
   producer?: TrackProducer;
   createdAt: string;

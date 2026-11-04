@@ -21,7 +21,7 @@ describe('UsersService', () => {
         count: jest.fn().mockResolvedValue(25),
       },
       purchase: {
-        aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 1500 } }),
+        aggregate: jest.fn().mockResolvedValue({ _count: { _all: 5 }, _sum: { amount: 1500.456 } }),
         findMany: jest.fn().mockResolvedValue([]),
         count: jest.fn().mockResolvedValue(5),
       },
@@ -149,7 +149,52 @@ describe('UsersService', () => {
       expect(stats).toHaveProperty('totalUsers');
       expect(stats).toHaveProperty('totalTracks');
       expect(stats).toHaveProperty('totalRevenue');
-      expect(stats.totalRevenue).toBe(359.88);
+      expect(stats.totalSales).toBe(5);
+      expect(stats.totalRevenue).toBe(1500.46);
+      expect(prismaService.purchase.aggregate).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { status: 'COMPLETED' } }),
+      );
+    });
+  });
+
+  describe('getPublicArtist', () => {
+    it('devuelve datos públicos sin correo ni contraseña', async () => {
+      prismaService.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        name: 'Juan',
+        email: 'privado@mail.com',
+        password: 'hash',
+        role: 'PRODUCER',
+        isActive: true,
+        artistName: 'JB',
+        createdAt: new Date('2026-01-01'),
+        artist: { artisticName: 'JB Beats', genre: 'Trap', verified: true },
+      });
+      prismaService.track = {
+        ...prismaService.track,
+        aggregate: jest.fn().mockResolvedValue({
+          _count: { _all: 3 },
+          _sum: { playsCount: 40 },
+        }),
+      };
+      const res: any = await service.getPublicArtist('u1');
+      expect(res.artistName).toBe('JB Beats');
+      expect(res.verified).toBe(true);
+      expect(res.tracksCount).toBe(3);
+      expect(res.totalPlays).toBe(40);
+      expect(res.email).toBeUndefined();
+      expect(res.password).toBeUndefined();
+    });
+
+    it('lanza NotFound si el usuario no es PRODUCER', async () => {
+      prismaService.user.findUnique.mockResolvedValue({
+        id: 'u2',
+        role: 'USER',
+        isActive: true,
+      });
+      await expect(service.getPublicArtist('u2')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from "react";
 import { Track } from "@/types";
 import { API_URL } from "@/services/config";
+import { registerPlayApi } from "@/services/trackService";
 
 interface PlayerContextType {
   currentTrack: Track | null;
@@ -195,6 +196,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setCurrentTrack(track);
     setCurrentTime(0);
     setDuration(0);
+    registerPlayApi(track.id);
 
     const fullUrl = getFullAudioUrl(track.audioUrl);
     audioRef.current.src = fullUrl;
