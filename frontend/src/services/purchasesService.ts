@@ -1,3 +1,4 @@
+import { apiMessage } from './http';
 import { API_URL } from './config';
 import { Purchase, PaymentSimulationResponse } from '@/types';
 
@@ -37,7 +38,7 @@ export async function simulatePaymentApi(
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Error al procesar la simulación de pago.');
+    throw new Error(apiMessage(data.message, 'Error al procesar la simulación de pago.'));
   }
 
   return data;
@@ -101,7 +102,7 @@ export async function downloadBeatFile(
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || 'No fue posible descargar el archivo del beat.');
+    throw new Error(apiMessage(errorData.message, 'No fue posible descargar el archivo del beat.'));
   }
 
   // Manejar respuesta como Blob para forzar descarga segura en el navegador

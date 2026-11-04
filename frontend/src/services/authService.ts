@@ -1,3 +1,4 @@
+import { apiMessage } from './http';
 import { API_URL } from './config';
 import { User } from '@/types';
 
@@ -28,7 +29,7 @@ export async function registerApi(
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Error en el registro de usuario.');
+    throw new Error(apiMessage(data.message, 'Error en el registro de usuario.'));
   }
   return data;
 }
@@ -42,7 +43,7 @@ export async function loginApi(email: string, password: string) {
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Credenciales incorrectas o problema de inicio de sesión.');
+    throw new Error(apiMessage(data.message, 'Credenciales incorrectas o problema de inicio de sesión.'));
   }
   return data;
 }
@@ -55,7 +56,7 @@ export async function getProfileApi(token: string): Promise<User> {
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Error al obtener el perfil de usuario.');
+    throw new Error(apiMessage(data.message, 'Error al obtener el perfil de usuario.'));
   }
   return data;
 }
@@ -69,7 +70,7 @@ export async function forgotPasswordApi(email: string): Promise<{ message: strin
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Error al solicitar el código de recuperación.');
+    throw new Error(apiMessage(data.message, 'Error al solicitar el código de recuperación.'));
   }
   return data;
 }
@@ -83,7 +84,7 @@ export async function verifyResetCodeApi(email: string, code: string): Promise<{
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Código incorrecto o expirado.');
+    throw new Error(apiMessage(data.message, 'Código incorrecto o expirado.'));
   }
   return data;
 }
@@ -101,7 +102,7 @@ export async function resetPasswordApi(
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Error al restablecer la contraseña.');
+    throw new Error(apiMessage(data.message, 'Error al restablecer la contraseña.'));
   }
   return data;
 }
@@ -123,8 +124,7 @@ export async function changePasswordApi(
 
   const data = await res.json();
   if (!res.ok) {
-    const msg = Array.isArray(data.message) ? data.message.join(' ') : data.message;
-    throw new Error(msg || 'Error al cambiar la contraseña.');
+    throw new Error(apiMessage(data.message, 'Error al cambiar la contraseña.'));
   }
   return data;
 }

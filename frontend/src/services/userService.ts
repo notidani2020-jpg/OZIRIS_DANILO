@@ -1,3 +1,4 @@
+import { apiMessage } from './http';
 import { API_URL } from './config';
 import { User, Track, PublicArtist } from '@/types';
 
@@ -28,7 +29,7 @@ export async function updateProfileApi(
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Error al actualizar el perfil.');
+    throw new Error(apiMessage(data.message, 'Error al actualizar el perfil.'));
   }
   return data;
 }
@@ -45,7 +46,7 @@ export async function uploadAvatarApi(token: string, file: File): Promise<User> 
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Error al subir la imagen de avatar.');
+    throw new Error(apiMessage(data.message, 'Error al subir la imagen de avatar.'));
   }
   return data;
 }
@@ -62,7 +63,7 @@ export async function uploadBannerApi(token: string, file: File): Promise<User> 
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Error al subir el banner.');
+    throw new Error(apiMessage(data.message, 'Error al subir el banner.'));
   }
   return data;
 }
@@ -75,7 +76,7 @@ export async function fetchFavoritesApi(token: string): Promise<Track[]> {
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Error al obtener favoritos.');
+    throw new Error(apiMessage(data.message, 'Error al obtener favoritos.'));
   }
   return data;
 }
@@ -91,7 +92,7 @@ export async function toggleFavoriteApi(
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Error al cambiar estado de favorito.');
+    throw new Error(apiMessage(data.message, 'Error al cambiar estado de favorito.'));
   }
   return data;
 }
@@ -102,7 +103,7 @@ export async function fetchPublicArtistApi(id: string): Promise<PublicArtist> {
   });
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'No se pudo cargar el perfil del artista.');
+    throw new Error(apiMessage(data.message, 'No se pudo cargar el perfil del artista.'));
   }
   return data;
 }

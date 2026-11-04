@@ -1,3 +1,4 @@
+import { apiMessage } from './http';
 import { API_URL } from './config';
 import { AdminStats, User } from '@/types';
 
@@ -9,7 +10,7 @@ export async function fetchAdminStats(token: string): Promise<AdminStats> {
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Error al obtener estadísticas del administrador.');
+    throw new Error(apiMessage(data.message, 'Error al obtener estadísticas del administrador.'));
   }
   return data;
 }
@@ -26,7 +27,7 @@ export async function fetchAdminUsers(token: string, search?: string): Promise<U
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Error al obtener la lista de usuarios.');
+    throw new Error(apiMessage(data.message, 'Error al obtener la lista de usuarios.'));
   }
   return data;
 }
@@ -57,7 +58,7 @@ export async function updateAdminUser(
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Error al actualizar usuario.');
+    throw new Error(apiMessage(data.message, 'Error al actualizar usuario.'));
   }
   return data;
 }
@@ -70,7 +71,7 @@ export async function deleteAdminUser(token: string, id: string): Promise<{ succ
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Error al eliminar usuario.');
+    throw new Error(apiMessage(data.message, 'Error al eliminar usuario.'));
   }
   return data;
 }
@@ -83,7 +84,7 @@ export async function deleteTrackApi(token: string, id: string): Promise<{ succe
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'Error al eliminar Beat.');
+    throw new Error(apiMessage(data.message, 'Error al eliminar Beat.'));
   }
   return data;
 }

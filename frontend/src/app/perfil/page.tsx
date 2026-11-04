@@ -123,7 +123,9 @@ function Section({
 
 function ProfileForm({ user }: { user: User }) {
   const router = useRouter();
-  const { token, updateCurrentUser, isAdmin, isArtist } = useAuth();
+  const { token, updateCurrentUser, isAdmin } = useAuth();
+  // Solo los productores tienen ficha de artista (un ADMIN no la tiene).
+  const isArtist = user.role === "PRODUCER" || !!user.artist;
 
   const [name, setName] = useState(user.name || "");
   const [lastName, setLastName] = useState(user.lastName || "");

@@ -1,3 +1,4 @@
+import { apiMessage } from './http';
 import { API_URL } from './config';
 import { Track } from '@/types';
 
@@ -76,7 +77,7 @@ export function uploadBeat(
       } else {
         try {
           const errorData = JSON.parse(xhr.responseText);
-          reject(new Error(errorData.message || 'Error al subir el Beat.'));
+          reject(new Error(apiMessage(errorData.message, 'Error al subir el Beat.')));
         } catch (e) {
           reject(new Error(`Error al subir el Beat (código ${xhr.status}).`));
         }
@@ -114,8 +115,7 @@ export async function updateTrackApi(
   });
   const data = await res.json();
   if (!res.ok) {
-    const msg = Array.isArray(data.message) ? data.message.join(' ') : data.message;
-    throw new Error(msg || 'Error al actualizar el Beat.');
+    throw new Error(apiMessage(data.message, 'Error al actualizar el Beat.'));
   }
   return data;
 }
