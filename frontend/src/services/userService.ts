@@ -10,6 +10,11 @@ export async function updateProfileApi(
     location: string;
     bio: string;
     avatarUrl: string;
+    genre: string;
+    bannerUrl: string;
+    spotifyUrl: string;
+    instagramUrl: string;
+    youtubeUrl: string;
   }>,
 ): Promise<User> {
   const res = await fetch(`${API_URL}/users/profile`, {
@@ -41,6 +46,23 @@ export async function uploadAvatarApi(token: string, file: File): Promise<User> 
   const data = await res.json();
   if (!res.ok) {
     throw new Error(data.message || 'Error al subir la imagen de avatar.');
+  }
+  return data;
+}
+
+export async function uploadBannerApi(token: string, file: File): Promise<User> {
+  const formData = new FormData();
+  formData.append('banner', file);
+
+  const res = await fetch(`${API_URL}/users/profile/banner`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Error al subir el banner.');
   }
   return data;
 }

@@ -18,7 +18,6 @@ import {
   downloadBeatFile,
 } from "@/services/api";
 import UploadBeatModal from "@/components/tracks/UploadBeatModal";
-import ProfileModal from "@/components/profile/ProfileModal";
 import PurchasedBeatsModal from "@/components/purchases/PurchasedBeatsModal";
 import FavoritesDrawer from "@/components/favorites/FavoritesDrawer";
 import PaymentSimulationModal from "@/components/checkout/PaymentSimulationModal";
@@ -118,7 +117,6 @@ export default function InicioPage() {
   // Modals & Drawers state
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isPurchasedBeatsModalOpen, setIsPurchasedBeatsModalOpen] = useState(false);
 
   // Catalog State
@@ -264,7 +262,6 @@ export default function InicioPage() {
         setSelectedSort={setSelectedSort}
         setIsMenuOpen={setIsMenuOpen}
         setIsUploadModalOpen={setIsUploadModalOpen}
-        setIsProfileModalOpen={setIsProfileModalOpen}
         setIsPurchasedBeatsModalOpen={setIsPurchasedBeatsModalOpen}
         purchasedTrackIds={purchasedTrackIds}
         favoritesCount={favorites.length}
@@ -369,7 +366,6 @@ export default function InicioPage() {
         onOpenPurchasedModal={() => setIsPurchasedBeatsModalOpen(true)}
         onOpenFavorites={openFavorites}
         onOpenUploadModal={() => setIsUploadModalOpen(true)}
-        onOpenProfileModal={() => setIsProfileModalOpen(true)}
         onClearFilters={clearAllFilters}
         onLogout={logout}
         apiBaseUrl={API_BASE_URL}
@@ -385,12 +381,6 @@ export default function InicioPage() {
           }}
         />
       )}
-
-      {/* MODAL 2: EDITAR PERFIL DE USUARIO */}
-      <ProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-      />
 
       {/* MODAL 3: MIS BEATS ADQUIRIDOS */}
       <PurchasedBeatsModal

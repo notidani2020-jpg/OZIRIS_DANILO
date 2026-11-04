@@ -5,7 +5,10 @@ import * as nodemailer from 'nodemailer';
 export class MailService {
   private readonly logger = new Logger(MailService.name);
 
-  private getTransporter(): { transporter: nodemailer.Transporter | null; senderEmail: string } {
+  private getTransporter(): {
+    transporter: nodemailer.Transporter | null;
+    senderEmail: string;
+  } {
     // Reload dotenv dynamically so changes to .env take effect immediately without needing server restart
     try {
       require('dotenv').config({ override: true });
@@ -51,7 +54,10 @@ export class MailService {
     return { transporter, senderEmail: rawUser };
   }
 
-  async sendPasswordResetEmail(to: string, code: string): Promise<{ success: boolean; message: string }> {
+  async sendPasswordResetEmail(
+    to: string,
+    code: string,
+  ): Promise<{ success: boolean; message: string }> {
     const { transporter, senderEmail } = this.getTransporter();
 
     if (!transporter) {
@@ -169,12 +175,19 @@ export class MailService {
         html: htmlContent,
       });
 
-      this.logger.log(`[MailService] Correo enviado exitosamente a: ${to} (Message ID: ${info.messageId})`);
+      this.logger.log(
+        `[MailService] Correo enviado exitosamente a: ${to} (Message ID: ${info.messageId})`,
+      );
       return { success: true, message: 'Correo enviado exitosamente.' };
     } catch (error: any) {
-      this.logger.error(`[MailService] Error enviando correo a ${to}:`, error?.message || error);
-      return { success: false, message: error?.message || 'Error al enviar correo.' };
+      this.logger.error(
+        `[MailService] Error enviando correo a ${to}:`,
+        error?.message || error,
+      );
+      return {
+        success: false,
+        message: error?.message || 'Error al enviar correo.',
+      };
     }
   }
 }
-

@@ -6,7 +6,9 @@ import { Pool } from 'pg';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor() {
-    const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/oziris';
+    const connectionString =
+      process.env.DATABASE_URL ||
+      'postgresql://postgres:postgres@localhost:5432/oziris';
     const pool = new Pool({ connectionString });
     const adapter = new PrismaPg(pool);
     super({ adapter });

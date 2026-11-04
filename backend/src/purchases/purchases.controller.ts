@@ -8,10 +8,19 @@ import {
   Request,
   Response,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+} from '@nestjs/swagger';
 import { PurchasesService } from './purchases.service';
 import { SimulatedPurchaseDto } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
+@ApiTags('Purchases')
+@ApiBearerAuth('JWT-Auth')
 @Controller('purchases')
 export class PurchasesController {
   constructor(private readonly purchasesService: PurchasesService) {}
@@ -22,6 +31,13 @@ export class PurchasesController {
    */
   @UseGuards(JwtAuthGuard)
   @Post('simulate')
+  @ApiOperation({
+    summary: 'Simular compra de un beat',
+    description: 'Procesa un pago simulado y registra la compra en el historial del usuario.',
+  })
+  @ApiResponse({ status: 201, description: 'Compra registrada exitosamente.' })
+  @ApiResponse({ status: 401, description: 'No autenticado.' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos o beat ya comprado.' })
   async simulatePayment(
     @Request() req: any,
     @Body() dto: SimulatedPurchaseDto,
@@ -36,6 +52,9 @@ export class PurchasesController {
    */
   @UseGuards(JwtAuthGuard)
   @Get('my-purchases')
+  @ApiOperation({ summary: 'Historial de compras del usuario autenticado' })
+  @ApiResponse({ status: 200, description: 'Lista de compras realizadas.' })
+  @ApiResponse({ status: 401, description: 'No autenticado.' })
   async getMyPurchases(@Request() req: any) {
     const userId = req.user.id;
     return this.purchasesService.getUserPurchases(userId);
@@ -46,10 +65,11 @@ export class PurchasesController {
    */
   @UseGuards(JwtAuthGuard)
   @Get('check/:trackId')
-  async checkStatus(
-    @Request() req: any,
-    @Param('trackId') trackId: string,
-  ) {
+  @ApiOperation({ summary: 'Verificar si el usuario compró un beat específico' })
+  @ApiParam({ name: 'trackId', description: 'ID del beat a verificar' })
+  @ApiResponse({ status: 200, description: 'Estado de compra del beat.' })
+  @ApiResponse({ status: 401, description: 'No autenticado.' })
+  async checkStatus(@Request() req: any, @Param('trackId') trackId: string) {
     const userId = req.user.id;
     return this.purchasesService.checkPurchaseStatus(userId, trackId);
   }
@@ -60,6 +80,15 @@ export class PurchasesController {
    */
   @UseGuards(JwtAuthGuard)
   @Get('download/:trackId')
+  @ApiOperation({
+    summary: 'Descargar archivo de audio de un beat comprado',
+    description: 'Requiere haber comprado el beat previamente o ser el productor/admin. Devuelve el archivo en stream.',
+  })
+  @ApiParam({ name: 'trackId', description: 'ID del beat a descargar' })
+  @ApiResponse({ status: 200, description: 'Archivo de audio enviado en stream.' })
+  @ApiResponse({ status: 401, description: 'No autenticado.' })
+  @ApiResponse({ status: 403, description: 'No tienes permiso para descargar este beat.' })
+  @ApiResponse({ status: 404, description: 'Beat no encontrado.' })
   async downloadBeat(
     @Request() req: any,
     @Param('trackId') trackId: string,
@@ -69,9 +98,15 @@ export class PurchasesController {
     const userRole = req.user.role;
     const ipAddress = req.ip || req.connection?.remoteAddress;
     const userAgent = req.headers ? req.headers['user-agent'] : undefined;
-    return this.purchasesService.handleDownload(userId, userRole, trackId, res, {
-      ipAddress,
-      userAgent,
-    });
+    return this.purchasesService.handleDownload(
+      userId,
+      userRole,
+      trackId,
+      res,
+      {
+        ipAddress,
+        userAgent,
+      },
+    );
   }
 }

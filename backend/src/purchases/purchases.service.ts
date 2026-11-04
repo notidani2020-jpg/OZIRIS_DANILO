@@ -33,14 +33,17 @@ export class PurchasesService {
     userRole: string,
     dto: SimulatedPurchaseDto,
   ) {
-    const trackIdsToProcess: string[] = dto.trackIds && dto.trackIds.length > 0
-      ? dto.trackIds
-      : dto.trackId
-      ? [dto.trackId]
-      : [];
+    const trackIdsToProcess: string[] =
+      dto.trackIds && dto.trackIds.length > 0
+        ? dto.trackIds
+        : dto.trackId
+          ? [dto.trackId]
+          : [];
 
     if (trackIdsToProcess.length === 0) {
-      throw new BadRequestException('Debes proporcionar al menos un Beat (trackId o trackIds).');
+      throw new BadRequestException(
+        'Debes proporcionar al menos un Beat (trackId o trackIds).',
+      );
     }
 
     const paymentMethod = dto.paymentMethod || 'PSE';
@@ -54,7 +57,9 @@ export class PurchasesService {
       try {
         track = await this.tracksService.findOne(trackId);
       } catch (err) {
-        throw new NotFoundException(`El beat con ID ${trackId} no fue encontrado.`);
+        throw new NotFoundException(
+          `El beat con ID ${trackId} no fue encontrado.`,
+        );
       }
 
       const amount = dto.amount || track.price || 29.99;
@@ -100,7 +105,11 @@ export class PurchasesService {
             payerEmail: dto.payerEmail || null,
             payerPhone: dto.payerPhone || null,
             payerDocument: dto.payerDocument || null,
-            paymentProvider: dto.bankName || (paymentMethod === 'Tarjeta' ? 'Tarjeta de Crédito/Débito' : paymentMethod),
+            paymentProvider:
+              dto.bankName ||
+              (paymentMethod === 'Tarjeta'
+                ? 'Tarjeta de Crédito/Débito'
+                : paymentMethod),
             simulation: {
               create: {
                 transactionId: `${transactionId}-${trackId.substring(0, 6)}`,
@@ -142,7 +151,10 @@ export class PurchasesService {
           alreadyOwned: false,
         });
       } catch (dbError) {
-        console.error('Error guardando en PostgreSQL (fallback en memoria):', dbError);
+        console.error(
+          'Error guardando en PostgreSQL (fallback en memoria):',
+          dbError,
+        );
         // Fallback en memoria si falla la BD
         const fallbackPurchase = {
           id: `sim-purch-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -165,7 +177,8 @@ export class PurchasesService {
 
     return {
       success: true,
-      message: '¡Pago simulado con éxito! Tu licencia ha sido generada y el beat está disponible para descarga.',
+      message:
+        '¡Pago simulado con éxito! Tu licencia ha sido generada y el beat está disponible para descarga.',
       transactionId,
       paymentMethod,
       licenseType,
@@ -225,11 +238,16 @@ export class PurchasesService {
         }));
       }
     } catch (err) {
-      console.error('Error consultando compras en DB (usando in-memory fallback):', err);
+      console.error(
+        'Error consultando compras en DB (usando in-memory fallback):',
+        err,
+      );
     }
 
     // Fallback en memoria
-    const userMemoryPurchases = this.inMemoryPurchases.filter((p) => p.userId === userId);
+    const userMemoryPurchases = this.inMemoryPurchases.filter(
+      (p) => p.userId === userId,
+    );
     const result = [];
     for (const p of userMemoryPurchases) {
       try {
@@ -277,7 +295,10 @@ export class PurchasesService {
     }
 
     const inMem = this.inMemoryPurchases.find(
-      (p) => p.userId === userId && p.trackId === trackId && p.status === 'COMPLETED',
+      (p) =>
+        p.userId === userId &&
+        p.trackId === trackId &&
+        p.status === 'COMPLETED',
     );
 
     if (inMem) {
@@ -365,7 +386,10 @@ export class PurchasesService {
         },
       });
     } catch (logError) {
-      console.warn('Advertencia al registrar log de descarga en DB:', logError?.message || logError);
+      console.warn(
+        'Advertencia al registrar log de descarga en DB:',
+        logError?.message || logError,
+      );
       this.inMemoryDownloads.push({
         userId,
         trackId,
@@ -376,7 +400,9 @@ export class PurchasesService {
 
     const rawAudioUrl = track.fullAudioUrl || track.audioUrl;
     if (!rawAudioUrl) {
-      throw new NotFoundException('Este beat no tiene un archivo de audio disponible para descarga.');
+      throw new NotFoundException(
+        'Este beat no tiene un archivo de audio disponible para descarga.',
+      );
     }
 
     // Limpiar y preparar nombre del archivo descargable
@@ -388,8 +414,13 @@ export class PurchasesService {
     // 1. Si es un archivo local en uploads (por ruta relativa o URL local)
     let localRelativePath: string | null = null;
 
-    if (rawAudioUrl.startsWith('/uploads/') || rawAudioUrl.startsWith('uploads/')) {
-      localRelativePath = rawAudioUrl.startsWith('/') ? rawAudioUrl.slice(1) : rawAudioUrl;
+    if (
+      rawAudioUrl.startsWith('/uploads/') ||
+      rawAudioUrl.startsWith('uploads/')
+    ) {
+      localRelativePath = rawAudioUrl.startsWith('/')
+        ? rawAudioUrl.slice(1)
+        : rawAudioUrl;
     } else if (rawAudioUrl.includes('/uploads/')) {
       const parts = rawAudioUrl.split('/uploads/');
       if (parts[1]) {
@@ -406,7 +437,10 @@ export class PurchasesService {
 
       for (const p of candidates) {
         if (existsSync(p)) {
-          res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
+          res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="${downloadFilename}"`,
+          );
           res.setHeader('Content-Type', 'audio/mpeg');
           res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
           const fileStream = createReadStream(p);
@@ -416,7 +450,10 @@ export class PurchasesService {
     }
 
     // 2. Si es una URL externa (e.g. SoundHelix o CDN remoto), hacer streaming server-side para evitar bloqueos CORS
-    if (rawAudioUrl.startsWith('http://') || rawAudioUrl.startsWith('https://')) {
+    if (
+      rawAudioUrl.startsWith('http://') ||
+      rawAudioUrl.startsWith('https://')
+    ) {
       try {
         const remoteRes = await fetch(rawAudioUrl);
         if (!remoteRes.ok) {
@@ -426,18 +463,29 @@ export class PurchasesService {
         const arrayBuffer = await remoteRes.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
-        res.setHeader('Content-Type', remoteRes.headers.get('content-type') || 'audio/mpeg');
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${downloadFilename}"`,
+        );
+        res.setHeader(
+          'Content-Type',
+          remoteRes.headers.get('content-type') || 'audio/mpeg',
+        );
         res.setHeader('Content-Length', buffer.length);
         res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
         return res.end(buffer);
       } catch (proxyError) {
-        console.error('Error al hacer proxy/streaming del audio remoto:', proxyError);
+        console.error(
+          'Error al hacer proxy/streaming del audio remoto:',
+          proxyError,
+        );
         // Como último recurso intentar redirección
         return res.redirect(rawAudioUrl);
       }
     }
 
-    throw new NotFoundException('No se pudo localizar el archivo físico de audio del beat.');
+    throw new NotFoundException(
+      'No se pudo localizar el archivo físico de audio del beat.',
+    );
   }
 }

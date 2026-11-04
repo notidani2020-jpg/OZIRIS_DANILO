@@ -2,7 +2,6 @@ import {
   Injectable,
   BadRequestException,
   UnauthorizedException,
-  ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -33,7 +32,9 @@ export class AuthService {
     }
 
     if (data.password.length < 6) {
-      throw new BadRequestException('La contraseña debe tener al menos 6 caracteres.');
+      throw new BadRequestException(
+        'La contraseña debe tener al menos 6 caracteres.',
+      );
     }
 
     const isArtist = data.accountType === 'ARTIST';
@@ -44,7 +45,9 @@ export class AuthService {
       email: data.email,
       password: data.password,
       role: assignedRole,
-      artisticName: isArtist ? (data.artisticName?.trim() || data.name.trim()) : undefined,
+      artisticName: isArtist
+        ? data.artisticName?.trim() || data.name.trim()
+        : undefined,
       genre: isArtist ? data.genre?.trim() : undefined,
     });
 
@@ -71,7 +74,9 @@ export class AuthService {
     }
 
     if (user.isActive === false) {
-      throw new ForbiddenException('Esta cuenta se encuentra desactivada. Contacte al administrador.');
+      throw new ForbiddenException(
+        'Esta cuenta se encuentra desactivada. Contacte al administrador.',
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(data.password, user.password);
@@ -107,7 +112,10 @@ export class AuthService {
     const user = await this.usersService.findByEmailWithPassword(cleanEmail);
     if (!user) {
       // Protect user privacy by returning generic success message
-      return { message: 'Si el correo está registrado en Oziris, recibirás un código de recuperación.' };
+      return {
+        message:
+          'Si el correo está registrado en Oziris, recibirás un código de recuperación.',
+      };
     }
 
     // Invalidate any existing unused reset codes for this email
@@ -157,7 +165,8 @@ export class AuthService {
 
     await this.mailService.sendPasswordResetEmail(user.email, code);
     return {
-      message: 'Si el correo está registrado en Oziris, recibirás un código de recuperación.',
+      message:
+        'Si el correo está registrado en Oziris, recibirás un código de recuperación.',
       email: cleanEmail,
     };
   }
@@ -190,13 +199,17 @@ export class AuthService {
       // Fallback to User table if not found in PasswordReset table
       const user = await this.usersService.findByEmailWithPassword(cleanEmail);
       if (!user || !user.resetPasswordCode || !user.resetPasswordExpires) {
-        throw new BadRequestException('Código inválido o ya utilizado. Solicita uno nuevo.');
+        throw new BadRequestException(
+          'Código inválido o ya utilizado. Solicita uno nuevo.',
+        );
       }
       if (user.resetPasswordCode !== cleanCode) {
         throw new BadRequestException('El código ingresado es incorrecto.');
       }
       if (new Date() > new Date(user.resetPasswordExpires)) {
-        throw new BadRequestException('El código ha expirado (validez de 15 minutos). Por favor solicita uno nuevo.');
+        throw new BadRequestException(
+          'El código ha expirado (validez de 15 minutos). Por favor solicita uno nuevo.',
+        );
       }
       return { message: 'Código verificado con éxito.' };
     }
@@ -209,7 +222,9 @@ export class AuthService {
           data: { used: true },
         });
       } catch (_) {}
-      throw new BadRequestException('El código ha expirado (validez de 15 minutos). Por favor solicita uno nuevo.');
+      throw new BadRequestException(
+        'El código ha expirado (validez de 15 minutos). Por favor solicita uno nuevo.',
+      );
     }
 
     // Check brute force attempts (max 5 failed attempts)
@@ -220,7 +235,9 @@ export class AuthService {
           data: { used: true },
         });
       } catch (_) {}
-      throw new BadRequestException('Has superado el número máximo de intentos permitidos. Solicita un nuevo código por seguridad.');
+      throw new BadRequestException(
+        'Has superado el número máximo de intentos permitidos. Solicita un nuevo código por seguridad.',
+      );
     }
 
     // Validate code match
@@ -238,9 +255,13 @@ export class AuthService {
 
       const remaining = 5 - nextAttempts;
       if (remaining <= 0) {
-        throw new BadRequestException('Código incorrecto. Has agotado tus intentos. Por seguridad solicita un nuevo código.');
+        throw new BadRequestException(
+          'Código incorrecto. Has agotado tus intentos. Por seguridad solicita un nuevo código.',
+        );
       }
-      throw new BadRequestException(`El código ingresado es incorrecto. Te ${remaining === 1 ? 'queda 1 intento' : `quedan ${remaining} intentos`}.`);
+      throw new BadRequestException(
+        `El código ingresado es incorrecto. Te ${remaining === 1 ? 'queda 1 intento' : `quedan ${remaining} intentos`}.`,
+      );
     }
 
     return { message: 'Código verificado con éxito.' };
@@ -255,7 +276,9 @@ export class AuthService {
     }
 
     if (newPassword.length < 6) {
-      throw new BadRequestException('La nueva contraseña debe tener al menos 6 caracteres.');
+      throw new BadRequestException(
+        'La nueva contraseña debe tener al menos 6 caracteres.',
+      );
     }
 
     const user = await this.usersService.findByEmailWithPassword(cleanEmail);
@@ -285,7 +308,9 @@ export class AuthService {
             data: { used: true },
           });
         } catch (_) {}
-        throw new BadRequestException('El código ha expirado. Solicita un nuevo código.');
+        throw new BadRequestException(
+          'El código ha expirado. Solicita un nuevo código.',
+        );
       }
 
       if (resetRecord.attempts >= 5 || resetRecord.code !== cleanCode) {
@@ -300,7 +325,9 @@ export class AuthService {
         throw new BadRequestException('Código incorrecto.');
       }
       if (new Date() > new Date(user.resetPasswordExpires)) {
-        throw new BadRequestException('El código ha expirado. Solicita un nuevo código.');
+        throw new BadRequestException(
+          'El código ha expirado. Solicita un nuevo código.',
+        );
       }
     }
 
@@ -331,6 +358,9 @@ export class AuthService {
       user.resetPasswordExpires = null;
     }
 
-    return { message: 'Contraseña restablecida con éxito. Ya puedes iniciar sesión con tu nueva contraseña.' };
+    return {
+      message:
+        'Contraseña restablecida con éxito. Ya puedes iniciar sesión con tu nueva contraseña.',
+    };
   }
 }

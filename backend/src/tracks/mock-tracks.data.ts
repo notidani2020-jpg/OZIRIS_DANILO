@@ -11,8 +11,10 @@ export const INITIAL_TRACKS: Track[] = [
     key: 'C Minor',
     tags: ['Trap', 'Dark', '808'],
     audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-    fullAudioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-    coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop',
+    fullAudioUrl:
+      'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    coverUrl:
+      'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop',
     producerId: 'prod-1',
     producer: {
       id: 'prod-1',
@@ -34,8 +36,10 @@ export const INITIAL_TRACKS: Track[] = [
     key: 'A Minor',
     tags: ['Reggaeton', 'Latino', 'Verano'],
     audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-    fullAudioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-    coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop',
+    fullAudioUrl:
+      'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+    coverUrl:
+      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop',
     producerId: 'prod-1',
     producer: {
       id: 'prod-1',
@@ -57,8 +61,10 @@ export const INITIAL_TRACKS: Track[] = [
     key: 'F Major',
     tags: ['R&B', 'Soul', 'Smooth'],
     audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-    fullAudioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-    coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop',
+    fullAudioUrl:
+      'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+    coverUrl:
+      'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop',
     producerId: 'prod-1',
     producer: {
       id: 'prod-1',
@@ -80,8 +86,10 @@ export const INITIAL_TRACKS: Track[] = [
     key: 'G Minor',
     tags: ['Boom Bap', '90s', 'Vinyl'],
     audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-    fullAudioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-    coverUrl: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=500&auto=format&fit=crop',
+    fullAudioUrl:
+      'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+    coverUrl:
+      'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=500&auto=format&fit=crop',
     producerId: 'prod-1',
     producer: {
       id: 'prod-1',
@@ -103,8 +111,10 @@ export const INITIAL_TRACKS: Track[] = [
     key: 'E Minor',
     tags: ['Drill', 'Club', 'Aggressive'],
     audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
-    fullAudioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
-    coverUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500&auto=format&fit=crop',
+    fullAudioUrl:
+      'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
+    coverUrl:
+      'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500&auto=format&fit=crop',
     producerId: 'prod-1',
     producer: {
       id: 'prod-1',

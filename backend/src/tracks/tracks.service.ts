@@ -1,6 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Track, CreateTrackDto, QueryTracksDto } from './dto';
+import { Track } from './dto';
 import { INITIAL_TRACKS } from './mock-tracks.data';
 
 export type { Track };
@@ -75,8 +79,16 @@ export class TracksService {
             { description: { contains: search, mode: 'insensitive' as const } },
             { genre: { contains: search, mode: 'insensitive' as const } },
             { key: { contains: search, mode: 'insensitive' as const } },
-            { producer: { name: { contains: search, mode: 'insensitive' as const } } },
-            { producer: { artistName: { contains: search, mode: 'insensitive' as const } } },
+            {
+              producer: {
+                name: { contains: search, mode: 'insensitive' as const },
+              },
+            },
+            {
+              producer: {
+                artistName: { contains: search, mode: 'insensitive' as const },
+              },
+            },
             { tags: { has: search } },
           ],
         });
@@ -107,7 +119,10 @@ export class TracksService {
         return dbTracks.map((t) => this.formatTrack(t));
       }
     } catch (e) {
-      console.error('Error fetching tracks from DB (fallback to memory):', e?.message || e);
+      console.error(
+        'Error fetching tracks from DB (fallback to memory):',
+        e?.message || e,
+      );
     }
 
     // In-memory fallback
@@ -116,7 +131,9 @@ export class TracksService {
       list = list.filter((t) => t.genre?.toLowerCase() === genre.toLowerCase());
     }
     if (tag) {
-      list = list.filter((t) => t.tags?.some((tg) => tg.toLowerCase() === tag.toLowerCase()));
+      list = list.filter((t) =>
+        t.tags?.some((tg) => tg.toLowerCase() === tag.toLowerCase()),
+      );
     }
     if (maxPrice !== undefined && !isNaN(maxPrice)) {
       list = list.filter((t) => Number(t.price) <= maxPrice);
@@ -164,7 +181,7 @@ export class TracksService {
 
   async create(data: Partial<Track> & { producerId?: string }): Promise<Track> {
     const producerId = data.producerId || 'user-admin-1';
-    
+
     // Verify that the user has an artist profile or producer/admin role
     if (producerId && producerId !== 'user-admin-1') {
       try {
@@ -185,7 +202,9 @@ export class TracksService {
     // Fetch producer from DB to get avatar if cover not provided
     let producerAvatarUrl: string | null = null;
     try {
-      const p = await this.prisma.user.findUnique({ where: { id: producerId } });
+      const p = await this.prisma.user.findUnique({
+        where: { id: producerId },
+      });
       if (p) producerAvatarUrl = p.avatarUrl;
     } catch (e) {}
 
@@ -232,7 +251,10 @@ export class TracksService {
       });
       if (created) return this.formatTrack(created);
     } catch (e) {
-      console.error('DB create track error (using in-memory fallback):', e?.message || e);
+      console.error(
+        'DB create track error (using in-memory fallback):',
+        e?.message || e,
+      );
     }
 
     this.inMemoryTracks.unshift(newTrack);
@@ -278,8 +300,14 @@ export class TracksService {
             avatarUrl: null,
             artistName: null,
           },
-      createdAt: t.createdAt instanceof Date ? t.createdAt.toISOString() : t.createdAt || new Date().toISOString(),
-      updatedAt: t.updatedAt instanceof Date ? t.updatedAt.toISOString() : t.updatedAt || new Date().toISOString(),
+      createdAt:
+        t.createdAt instanceof Date
+          ? t.createdAt.toISOString()
+          : t.createdAt || new Date().toISOString(),
+      updatedAt:
+        t.updatedAt instanceof Date
+          ? t.updatedAt.toISOString()
+          : t.updatedAt || new Date().toISOString(),
     };
   }
 }

@@ -40,7 +40,6 @@ interface InicioNavbarProps {
   setSelectedSort: (sort: string) => void;
   setIsMenuOpen: (open: boolean) => void;
   setIsUploadModalOpen: (open: boolean) => void;
-  setIsProfileModalOpen: (open: boolean) => void;
   setIsPurchasedBeatsModalOpen: (open: boolean) => void;
   purchasedTrackIds: string[];
   favoritesCount: number;
@@ -62,7 +61,6 @@ export default function InicioNavbar({
   setSelectedSort,
   setIsMenuOpen,
   setIsUploadModalOpen,
-  setIsProfileModalOpen,
   setIsPurchasedBeatsModalOpen,
   purchasedTrackIds,
   favoritesCount,
@@ -239,9 +237,8 @@ export default function InicioNavbar({
               </button>
 
               {/* PERFIL */}
-              <button
-                onClick={() => setIsProfileModalOpen(true)}
-                type="button"
+              <Link
+                href="/perfil"
                 className="flex items-center gap-2 bg-[#10171e] hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-500/30 px-3 py-1.5 rounded-full transition cursor-pointer group"
                 title="Editar mi perfil"
               >
@@ -265,7 +262,7 @@ export default function InicioNavbar({
                 <span className="hidden sm:inline text-xs font-semibold text-zinc-200 group-hover:text-emerald-300">
                   {user?.name?.split(" ")[0]}
                 </span>
-              </button>
+              </Link>
             </div>
           ) : (
             <div className="flex items-center gap-3">

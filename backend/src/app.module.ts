@@ -11,7 +11,15 @@ import { PrismaModule } from './prisma/prisma.module';
 import { MailModule } from './mail/mail.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, TracksModule, PurchasesModule, StorageModule, MailModule, PrismaModule],
+  imports: [
+    AuthModule,
+    UsersModule,
+    TracksModule,
+    PurchasesModule,
+    StorageModule,
+    MailModule,
+    PrismaModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

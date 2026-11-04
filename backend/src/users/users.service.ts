@@ -1,7 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
-import { UserResponse, ArtistResponse, CreateUserDto, UpdateUserDto, UpdateProfileDto } from './dto';
+import { UserResponse, ArtistResponse } from './dto';
 import { INITIAL_USERS } from './mock-users.data';
 
 export type { UserResponse, ArtistResponse };
@@ -9,7 +13,8 @@ export type { UserResponse, ArtistResponse };
 @Injectable()
 export class UsersService {
   private inMemoryUsers = [...INITIAL_USERS];
-  private inMemoryFavorites: { id: string; userId: string; trackId: string }[] = [];
+  private inMemoryFavorites: { id: string; userId: string; trackId: string }[] =
+    [];
 
   constructor(private prisma: PrismaService) {}
 
@@ -74,7 +79,9 @@ export class UsersService {
       // Fallback
     }
 
-    return this.inMemoryUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
+    return this.inMemoryUsers.find(
+      (u) => u.email.toLowerCase() === email.toLowerCase(),
+    );
   }
 
   async createUser(data: {
@@ -87,13 +94,22 @@ export class UsersService {
   }) {
     const existing = await this.findByEmailWithPassword(data.email);
     if (existing) {
-      throw new ConflictException('El correo electrónico ya se encuentra registrado.');
+      throw new ConflictException(
+        'El correo electrónico ya se encuentra registrado.',
+      );
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
-    const assignedRole = data.role === 'ADMIN' ? 'ADMIN' : data.role === 'PRODUCER' ? 'PRODUCER' : 'USER';
+    const assignedRole =
+      data.role === 'ADMIN'
+        ? 'ADMIN'
+        : data.role === 'PRODUCER'
+          ? 'PRODUCER'
+          : 'USER';
     const isArtist = assignedRole === 'PRODUCER';
-    const finalArtistName = isArtist ? (data.artisticName?.trim() || data.name.trim()) : null;
+    const finalArtistName = isArtist
+      ? data.artisticName?.trim() || data.name.trim()
+      : null;
 
     const newUser = {
       id: `user-${Date.now()}`,
@@ -148,6 +164,11 @@ export class UsersService {
       location: string;
       bio: string;
       avatarUrl: string;
+      genre: string;
+      bannerUrl: string;
+      spotifyUrl: string;
+      instagramUrl: string;
+      youtubeUrl: string;
     }>,
   ): Promise<UserResponse> {
     try {
@@ -161,8 +182,44 @@ export class UsersService {
           bio: data.bio,
           avatarUrl: data.avatarUrl,
         },
+        include: { artist: true },
       });
-      if (updated) return this.sanitizeUser(updated);
+      if (updated) {
+        const hasArtistData = [
+          data.artistName,
+          data.bio,
+          data.genre,
+          data.bannerUrl,
+          data.spotifyUrl,
+          data.instagramUrl,
+          data.youtubeUrl,
+        ].some((v) => v !== undefined);
+        if (updated.role === 'PRODUCER' && hasArtistData) {
+          const artistFields = {
+            artisticName: data.artistName?.trim() || undefined,
+            bio: data.bio,
+            genre: data.genre,
+            bannerUrl: data.bannerUrl,
+            spotifyUrl: data.spotifyUrl,
+            instagramUrl: data.instagramUrl,
+            youtubeUrl: data.youtubeUrl,
+          };
+          const artist = await this.prisma.artist.upsert({
+            where: { userId },
+            update: artistFields,
+            create: {
+              ...artistFields,
+              artisticName:
+                artistFields.artisticName ||
+                updated.artistName ||
+                updated.name,
+              userId,
+            },
+          });
+          return this.sanitizeUser({ ...updated, artist });
+        }
+        return this.sanitizeUser(updated);
+      }
     } catch (e) {
       // Fallback
     }
@@ -177,10 +234,12 @@ export class UsersService {
       ...current,
       name: data.name !== undefined ? data.name : current.name,
       lastName: data.lastName !== undefined ? data.lastName : current.lastName,
-      artistName: data.artistName !== undefined ? data.artistName : current.artistName,
+      artistName:
+        data.artistName !== undefined ? data.artistName : current.artistName,
       location: data.location !== undefined ? data.location : current.location,
       bio: data.bio !== undefined ? data.bio : current.bio,
-      avatarUrl: data.avatarUrl !== undefined ? data.avatarUrl : current.avatarUrl,
+      avatarUrl:
+        data.avatarUrl !== undefined ? data.avatarUrl : current.avatarUrl,
       updatedAt: new Date().toISOString(),
     };
     this.inMemoryUsers[index] = updatedMemory;
@@ -229,12 +288,14 @@ export class UsersService {
       ...current,
       name: data.name !== undefined ? data.name : current.name,
       lastName: data.lastName !== undefined ? data.lastName : current.lastName,
-      artistName: data.artistName !== undefined ? data.artistName : current.artistName,
+      artistName:
+        data.artistName !== undefined ? data.artistName : current.artistName,
       location: data.location !== undefined ? data.location : current.location,
       role: data.role !== undefined ? data.role : current.role,
       isActive: data.isActive !== undefined ? data.isActive : current.isActive,
       bio: data.bio !== undefined ? data.bio : current.bio,
-      avatarUrl: data.avatarUrl !== undefined ? data.avatarUrl : current.avatarUrl,
+      avatarUrl:
+        data.avatarUrl !== undefined ? data.avatarUrl : current.avatarUrl,
       updatedAt: new Date().toISOString(),
     };
     this.inMemoryUsers[index] = updatedMemory;
@@ -282,7 +343,11 @@ export class UsersService {
         this.inMemoryFavorites.splice(idx, 1);
         return { isFavorite: false, message: 'Removido de favoritos.' };
       } else {
-        this.inMemoryFavorites.push({ id: `fav-${Date.now()}`, userId, trackId });
+        this.inMemoryFavorites.push({
+          id: `fav-${Date.now()}`,
+          userId,
+          trackId,
+        });
         return { isFavorite: true, message: 'Guardado en favoritos.' };
       }
     }
@@ -314,12 +379,16 @@ export class UsersService {
     try {
       totalUsers = await this.prisma.user.count();
       activeUsers = await this.prisma.user.count({ where: { isActive: true } });
-      totalProducers = await this.prisma.user.count({ where: { role: 'PRODUCER' as any } });
+      totalProducers = await this.prisma.user.count({
+        where: { role: 'PRODUCER' as any },
+      });
       totalTracks = await this.prisma.track.count();
     } catch (e) {
       totalUsers = this.inMemoryUsers.length;
       activeUsers = this.inMemoryUsers.filter((u) => u.isActive).length;
-      totalProducers = this.inMemoryUsers.filter((u) => u.role === 'PRODUCER' || u.role === 'ADMIN').length;
+      totalProducers = this.inMemoryUsers.filter(
+        (u) => u.role === 'PRODUCER' || u.role === 'ADMIN',
+      ).length;
       totalTracks = 4;
     }
 
@@ -339,7 +408,8 @@ export class UsersService {
       email: user.email,
       name: user.name,
       lastName: user.lastName || null,
-      artistName: user.artistName || (user.artist ? user.artist.artisticName : null),
+      artistName:
+        user.artistName || (user.artist ? user.artist.artisticName : null),
       location: user.location || null,
       avatarUrl: user.avatarUrl || null,
       bio: user.bio || (user.artist ? user.artist.bio : null),
@@ -362,8 +432,14 @@ export class UsersService {
                 : user.artist.createdAt || new Date().toISOString(),
           }
         : null,
-      createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt || new Date().toISOString(),
-      updatedAt: user.updatedAt instanceof Date ? user.updatedAt.toISOString() : user.updatedAt || new Date().toISOString(),
+      createdAt:
+        user.createdAt instanceof Date
+          ? user.createdAt.toISOString()
+          : user.createdAt || new Date().toISOString(),
+      updatedAt:
+        user.updatedAt instanceof Date
+          ? user.updatedAt.toISOString()
+          : user.updatedAt || new Date().toISOString(),
     };
   }
 }

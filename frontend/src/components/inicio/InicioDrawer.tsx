@@ -32,7 +32,6 @@ interface InicioDrawerProps {
   onOpenPurchasedModal: () => void;
   onOpenFavorites: () => void;
   onOpenUploadModal: () => void;
-  onOpenProfileModal: () => void;
   onClearFilters: () => void;
   onLogout: () => void;
   apiBaseUrl?: string;
@@ -50,7 +49,6 @@ export const InicioDrawer: React.FC<InicioDrawerProps> = ({
   onOpenPurchasedModal,
   onOpenFavorites,
   onOpenUploadModal,
-  onOpenProfileModal,
   onClearFilters,
   onLogout,
   apiBaseUrl = "http://localhost:4000",
@@ -253,19 +251,16 @@ export const InicioDrawer: React.FC<InicioDrawerProps> = ({
             </span>
 
             {isAuthenticated && (
-              <button
-                onClick={() => {
-                  onClose();
-                  onOpenProfileModal();
-                }}
-                type="button"
+              <Link
+                href="/perfil"
+                onClick={onClose}
                 className="w-full flex items-center gap-3.5 p-3 rounded-2xl hover:bg-white/5 transition text-zinc-300 hover:text-white text-left cursor-pointer"
               >
                 <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
                   <UserIcon className="w-4 h-4" />
                 </div>
                 <span className="font-medium text-sm">Editar Mi Perfil</span>
-              </button>
+              </Link>
             )}
 
             {isAdmin && (

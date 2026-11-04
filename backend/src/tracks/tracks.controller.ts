@@ -6,21 +6,42 @@ import {
   Param,
   Query,
   Body,
+  UseGuards,
   UseInterceptors,
   UploadedFiles,
   Request,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiConsumes,
+  ApiBody,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { TracksService } from './tracks.service';
-import { Track, QueryTracksDto } from './dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Track } from './dto';
 
+@ApiTags('Tracks')
 @Controller('tracks')
 export class TracksController {
   constructor(private readonly tracksService: TracksService) {}
 
   @Get()
+  @ApiOperation({ summary: 'Listar y filtrar beats', description: 'Devuelve todos los beats con soporte de filtros opcionales.' })
+  @ApiQuery({ name: 'genre', required: false, example: 'Trap', description: 'Filtrar por género' })
+  @ApiQuery({ name: 'search', required: false, example: 'dark', description: 'Búsqueda por texto (título, descripción, tags)' })
+  @ApiQuery({ name: 'tag', required: false, example: 'melodic', description: 'Filtrar por tag' })
+  @ApiQuery({ name: 'maxPrice', required: false, example: 50, description: 'Precio máximo en USD' })
+  @ApiQuery({ name: 'category', required: false, example: 'beats', description: 'Filtrar por categoría' })
+  @ApiQuery({ name: 'sort', required: false, enum: ['price_asc', 'price_desc', 'newest', 'popular'], description: 'Criterio de ordenamiento' })
+  @ApiResponse({ status: 200, description: 'Lista de tracks.' })
   async findAll(
     @Query('genre') genre?: string,
     @Query('search') search?: string,
@@ -40,11 +61,41 @@ export class TracksController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Obtener un beat por ID' })
+  @ApiParam({ name: 'id', description: 'ID del track' })
+  @ApiResponse({ status: 200, description: 'Datos del track.' })
+  @ApiResponse({ status: 404, description: 'Track no encontrado.' })
   async findOne(@Param('id') id: string): Promise<Track> {
     return this.tracksService.findOne(id);
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-Auth')
+  @ApiOperation({
+    summary: 'Subir un nuevo beat',
+    description: 'Requiere autenticación JWT. Enviar como `multipart/form-data` con los archivos de audio y portada.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['title', 'price'],
+      properties: {
+        title:       { type: 'string',  example: 'Dark Night Trap',          description: 'Título del beat' },
+        description: { type: 'string',  example: 'Beat oscuro con 808s',      description: 'Descripción' },
+        price:       { type: 'number',  example: 29.99,                       description: 'Precio en USD' },
+        genre:       { type: 'string',  example: 'Trap',                      description: 'Género musical' },
+        bpm:         { type: 'integer', example: 140,                         description: 'Beats por minuto' },
+        key:         { type: 'string',  example: 'Am',                        description: 'Tonalidad' },
+        tags:        { type: 'string',  example: 'dark,808,melodic',          description: 'Tags separados por coma' },
+        audio:       { type: 'string',  format: 'binary',                     description: 'Archivo de audio (MP3/WAV)' },
+        cover:       { type: 'string',  format: 'binary',                     description: 'Imagen de portada (JPG/PNG)' },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Beat creado exitosamente.' })
+  @ApiResponse({ status: 401, description: 'No autenticado.' })
   @UseInterceptors(
     FileFieldsInterceptor(
       [
@@ -56,7 +107,11 @@ export class TracksController {
       {
         storage: diskStorage({
           destination: './uploads',
-          filename: (req: any, file: any, cb: (error: Error | null, filename: string) => void) => {
+          filename: (
+            req: any,
+            file: any,
+            cb: (error: Error | null, filename: string) => void,
+          ) => {
             const randomName = Array(16)
               .fill(null)
               .map(() => Math.round(Math.random() * 16).toString(16))
@@ -90,11 +145,14 @@ export class TracksController {
 
     const tagsArray =
       typeof body?.tags === 'string'
-        ? body.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+        ? body.tags
+            .split(',')
+            .map((t: string) => t.trim())
+            .filter(Boolean)
         : body?.tags || [];
 
-    // Use authenticated user ID as producerId if JWT is present, otherwise fallback
-    const producerId = req?.user?.id || body?.producerId || 'user-admin-1';
+    // ID del productor tomado SIEMPRE del usuario autenticado via JWT
+    const producerId = req.user.id;
 
     return this.tracksService.create({
       title: body?.title,
@@ -112,6 +170,10 @@ export class TracksController {
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Eliminar un beat por ID' })
+  @ApiParam({ name: 'id', description: 'ID del track a eliminar' })
+  @ApiResponse({ status: 200, description: 'Beat eliminado.' })
+  @ApiResponse({ status: 404, description: 'Beat no encontrado.' })
   async remove(@Param('id') id: string): Promise<{ success: boolean }> {
     return this.tracksService.remove(id);
   }

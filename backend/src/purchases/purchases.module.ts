@@ -1,4 +1,11 @@
-import { Module, Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Module,
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { PurchasesController } from './purchases.controller';
 import { PurchasesService, SimulatedPurchaseDto } from './purchases.service';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -15,7 +22,11 @@ export class PaymentsController {
     @Request() req: any,
     @Body() dto: SimulatedPurchaseDto,
   ) {
-    return this.purchasesService.simulatePayment(req.user.id, req.user.role, dto);
+    return this.purchasesService.simulatePayment(
+      req.user.id,
+      req.user.role,
+      dto,
+    );
   }
 }
 
