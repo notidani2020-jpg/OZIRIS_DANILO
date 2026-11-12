@@ -19,7 +19,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               alt="Oziris Logo"
               width={220}
               height={80}
-              className="object-contain"
+              className="object-contain brightness-0 invert drop-shadow-[0_0_18px_rgba(16,185,129,0.16)]"
               priority
             />
           </div>

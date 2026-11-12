@@ -3,53 +3,11 @@
 
 import React from 'react';
 import { Check, Star, X } from 'lucide-react'; // Iconos de palomita y estrella
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { formatPlanPrice, SUBSCRIPTION_PLANS } from '@/data/subscriptionPlans';
 
 export default function PricingPage() {
   const router = useRouter();
-  // Arreglo de objetos con la información de cada membresía (Tiers de pago)
-  const plans = [
-    {
-      name: "Free",
-      description: "Disfruta limitadamente",
-      priceYear: "$0.00",
-      priceMonth: "$0.00",
-      features: [
-        "Subir hasta 10 beats",
-        "Licencia estándar",
-        "0% de comisión por beat",
-        "Uso no exclusivo"
-      ],
-      highlighted: false,
-    },
-    {
-      name: "Plus",
-      description: "Beneficios exclusivos",
-      priceYear: "$250.000",
-      priceMonth: "$25.000",
-      features: [
-        "Subir hasta 100 beats",
-        "Perfil mejorado (banners, links, redes)",
-        "15% de comisión en ventas",
-        "Acceso limitado a licencias exclusivas"
-      ],
-      highlighted: true,
-    },
-    {
-      name: "Premium",
-      description: "Disfruta a tu estilo",
-      priceYear: "$600.000",
-      priceMonth: "$50.000",
-      features: [
-        "Beats ilimitados",
-        "Perfil avanzado",
-        "50% de comisión en ventas",
-        "Licencias exclusivas y personalizadas"
-      ],
-      highlighted: false,
-    }
-  ];
 
   return (
     // Contenedor principal: min-h-screen para cubrir toda la pantalla, con fondo oscuro
@@ -78,7 +36,7 @@ export default function PricingPage() {
         {/* Grid para acomodar las tarjetas: 1 columna en móvil, 3 columnas en pantallas medianas/grandes */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
           {/* Iteramos sobre nuestra constante `plans` para renderizar cada tarjeta dinámicamente */}
-          {plans.map((plan, index) => (
+          {SUBSCRIPTION_PLANS.map((plan, index) => (
             <div 
               key={plan.name}
               className={`relative flex flex-col p-8 rounded-3xl transition-all duration-300 hover:-translate-y-2 animate-in fade-in slide-in-from-bottom-8 ${
@@ -101,11 +59,11 @@ export default function PricingPage() {
 
               <div className="mb-8">
                 <div className="flex items-baseline gap-1 mb-1">
-                  <span className="text-4xl md:text-5xl font-bold tracking-tighter">{plan.priceYear}</span>
+                  <span className="text-4xl md:text-5xl font-bold tracking-tighter">{formatPlanPrice(plan.annualPrice)}</span>
                   <span className="text-zinc-400 font-medium">/ año</span>
                 </div>
                 <div className="text-sm font-medium text-emerald-400">
-                  Mes por tan solo {plan.priceMonth}
+                  Mes por tan solo {formatPlanPrice(plan.monthlyPrice)}
                 </div>
               </div>
 
@@ -128,13 +86,14 @@ export default function PricingPage() {
 
               <div className="mt-10 pt-4">
                 <button
+                  onClick={() => router.push(`/suscribirse?plan=${plan.id}`)}
                   className={`w-full py-3.5 rounded-xl font-bold transition-all active:scale-[0.98] cursor-pointer ${
                     plan.highlighted
                       ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 shadow-lg shadow-emerald-500/20'
                       : 'bg-white/10 hover:bg-white/20 text-white border border-white/5'
                   }`}
                 >
-                  Suscribete ahora
+                  Suscríbete ahora
                 </button>
                 <p className="text-center text-xs font-medium text-zinc-500 mt-4 uppercase tracking-wider">
                   Comienza la prueba de 7 dias
